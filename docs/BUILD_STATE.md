@@ -47,7 +47,7 @@ Current task: P4-T1 - Last updated: 2026-10-23
 - [x] P0 - `npm run verify` passes on the empty workspaces.
 - [x] P1 - Engine tests pass; invariants hold; engine coverage is at least 90%.
 - [x] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
-- [ ] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
+- [x] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
 - [ ] P4 - Timeline sorts entries and distinguishes future and overdue items.
 - [ ] P5 - All charts have tooltips/legends and update on loan switch.
 - [ ] P6 - Overview totals equal the sum of individual loans.
@@ -60,6 +60,7 @@ Current task: P4-T1 - Last updated: 2026-10-23
 - 2026-10-23 - Apply a prepayment after any EMI due on the same date; rate changes affect the first installment due on or after their effective date - uses date-only schedule boundaries consistently.
 - 2026-10-23 - Store the prepayment reduction choice on a prepayment or part-payment record - preserves how the loan schedule should be recalculated.
 - 2026-10-23 - Store full exports as version 1 JSON and require an explicit `overwrite` mode after preview - prevents accidental replacement and supports future format migrations.
+- 2026-10-23 - Use a jsdom React Testing Library flow to exercise loan creation and URL-preserving tab/loan switching - verifies the P3 user-visible gate without requiring a browser install.
 
 ## Blockers
 - none
@@ -88,3 +89,4 @@ Current task: P4-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P3-T1 - Added React/Vite shell, URL-synced loan selector, preserved tab query, theme toggle, local API client, and loading/error states; `npm run build` passes - P3-T2 loan form remains.
 - 2026-10-23 - P3-T2 - Added validated loan create/edit form, paise-safe EMI/funding previews and atomic initial funding saves; 54 tests pass and web build succeeds - P3-T3 summary cards and funding split remain.
 - 2026-10-23 - P3-T3 - Added six loan summary cards, Recharts funding donut, and repayment/disbursement progress bars with warnings; verification passes and web build succeeds - P4-T1 entry forms remain.
+- 2026-10-23 - P3 gate - Added a jsdom UI flow covering two loan creations, the known ₹43,391.16 EMI, summary cards, URL/tab preservation, and client-side loan switching; `npm run verify` passes (55 tests) and `npm run build` succeeds - P4-T1 is next.

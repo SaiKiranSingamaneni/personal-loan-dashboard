@@ -82,6 +82,9 @@ Current task: Complete - Last updated: 2026-10-23
 - none
 
 ## Session log
+- 2026-10-23 - Post-v1 EMI basis and loan delete - Added selectable sanctioned/disbursed EMI basis, optional pre-EMI interest-only behavior, daily/monthly pure payment split with carry-forward warnings, payment breakdown API/UI, and sidebar loan-to-Trash action; `npm run verify` passes (90 tests) - no outstanding work.
+- 2026-10-23 - Post-v1 EMI and Activity update - Added a persisted EMI calculation basis (sanctioned or disbursed principal), migration for existing databases, completed EMI timeline filter, and verified due EMIs are automatically marked paid; `npm run verify` passes (85 tests) - no outstanding work.
+- 2026-10-23 - Post-v1 Activity refinements - Added sortable, filterable and paginated recorded entries, paginated upcoming EMIs, note-first entry details, automatic paid status for EMIs due through today, and fixed migration path resolution for dev startup; `npm run verify` passes - no outstanding work.
 - 2026-10-23 - P0-T1 - Initialized the Git repository and npm workspaces, strict TypeScript configs, ESLint, Prettier, and Vitest; `npm run verify` passes - P0-T2 root scripts and P0-T3 README skeleton remained.
 - 2026-10-23 - P0-T2 - Added root dev and build scripts alongside the verification scripts - P0-T3 README skeleton and P0 phase gate remain.
 - 2026-10-23 - P0-T3 - Saved the complete spec and build tracker, added the README skeleton and data ignore rule; P0 gate checks pass - P1-T1 is next.

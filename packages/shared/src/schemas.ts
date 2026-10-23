@@ -25,6 +25,9 @@ const loanFieldsSchema = z.object({
     tenureMonths: z.number().int().min(1).max(1200),
     startDate: isoDateSchema,
     emiDueDay: z.number().int().min(1).max(31),
+    emiBasis: z.enum(["SANCTIONED", "DISBURSED"]).default("DISBURSED"),
+    preEmiInterestOnly: z.boolean().default(false),
+    interestMethod: z.enum(["DAILY", "MONTHLY"]).default("DAILY"),
     emiOverride: z.number().int().nonnegative().safe().nullable().optional(),
     processingFee: z.number().int().nonnegative().safe().nullable().optional(),
     otherCharges: z.number().int().nonnegative().safe().nullable().optional(),
@@ -133,6 +136,7 @@ export const timelineQuerySchema = z
     to: isoDateSchema.optional(),
     q: z.string().trim().max(100).optional(),
     order: z.enum(["asc", "desc"]).default("desc"),
+    completedEmis: z.enum(["true", "false"]).optional(),
   })
   .strict()
   .superRefine((query, context) => {

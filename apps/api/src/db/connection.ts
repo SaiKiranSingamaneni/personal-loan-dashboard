@@ -1,10 +1,13 @@
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
+
+const migrationsDirectory = fileURLToPath(new URL("./migrations/", import.meta.url));
 
 export function runMigrations(
   database: Database.Database,
-  migrationsDirectory = resolve(process.cwd(), "apps/api/src/db/migrations"),
+  migrationsPath = migrationsDirectory,
 ): void {
   database.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -20,11 +23,11 @@ export function runMigrations(
     "INSERT INTO schema_migrations (name) VALUES (?)",
   );
 
-  for (const name of readdirSync(migrationsDirectory).filter((entry) => entry.endsWith(".sql")).sort()) {
+  for (const name of readdirSync(migrationsPath).filter((entry) => entry.endsWith(".sql")).sort()) {
     if (applied.includes(name)) {
       continue;
     }
-    const sql = readFileSync(resolve(migrationsDirectory, name), "utf8");
+    const sql = readFileSync(resolve(migrationsPath, name), "utf8");
     database.transaction(() => {
       database.exec(sql);
       addMigration.run(name);

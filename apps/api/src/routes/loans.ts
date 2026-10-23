@@ -3,6 +3,7 @@ import { Router, type Request } from "express";
 import { addMonths, asIsoDate } from "@loan-dashboard/shared";
 import {
   applyRateChanges,
+  calculatePaymentBreakdown,
   asPaise,
   createAmortizationSchedule,
   createScheduleWithFixedEmi,
@@ -45,12 +46,23 @@ function firstDueDate(startDate: string, dueDay: number) {
   return asIsoDate(`${followingMonth.slice(0, 7)}-${day}`);
 }
 
+function localTodayIso(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function loanSchedule(repositories: RepositorySet, loanId: string) {
   const loan = getLoan(repositories, loanId);
   const disbursements = repositories.children.disbursements.listByLoan(loanId);
   const totalDisbursed = disbursements.reduce((sum, row) => sum + row.amount, 0);
+  const schedulePrincipal = loan.emiBasis === "SANCTIONED"
+    ? loan.sanctionedAmount
+    : totalDisbursed > 0 ? totalDisbursed : loan.sanctionedAmount;
   const firstDate = firstDueDate(loan.startDate, loan.emiDueDay);
-  const staged = disbursements.length > 0 &&
+  const staged = loan.emiBasis === "DISBURSED" && disbursements.length > 0 &&
     (loan.emiStartRule === "date" || totalDisbursed === loan.sanctionedAmount);
   let schedule = staged
     ? createStagedDisbursementSchedule({
@@ -68,7 +80,7 @@ function loanSchedule(repositories: RepositorySet, loanId: string) {
             : { type: "full-disbursement" },
       })
     : createAmortizationSchedule({
-        principal: asPaise(totalDisbursed > 0 ? totalDisbursed : loan.sanctionedAmount),
+        principal: asPaise(schedulePrincipal),
         annualRatePercent: loan.annualRatePercent,
         tenureMonths: loan.tenureMonths,
         firstDueDate: firstDate,
@@ -147,6 +159,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
         .map((payment) => [payment.scheduledPeriod!, payment]),
     );
     const now = new Date().toISOString();
+    const today = localTodayIso();
     let created = 0;
     let updated = 0;
     repositories.transaction(() => {
@@ -159,6 +172,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
               amount: row.emi,
               principalPart: row.principal,
               interestPart: row.interest,
+              ...(row.dueDate <= today ? { status: "paid" as const } : {}),
               updatedAt: now,
             });
             updated += 1;
@@ -173,7 +187,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
           type: "emi",
           principalPart: row.principal,
           interestPart: row.interest,
-          status: "scheduled",
+          status: row.dueDate <= today ? "paid" : "scheduled",
           scheduledPeriod: row.period,
           prepaymentMode: null,
           note: null,
@@ -298,6 +312,32 @@ export function createLoansRouter(repositories: RepositorySet): Router {
         status: statusByPeriod.get(row.period) ?? "scheduled",
       })),
     );
+  });
+
+  router.get("/:id/payment-breakdown", (request, response) => {
+    const id = routeId(request);
+    const { loan } = loanSchedule(repositories, id);
+    const disbursements = repositories.children.disbursements.listByLoan(id);
+    const payments = repositories.children.payments.listByLoan(id);
+    const rows = calculatePaymentBreakdown({
+      sanctionedAmount: asPaise(loan.sanctionedAmount),
+      annualRatePercent: loan.annualRatePercent,
+      tenureMonths: loan.tenureMonths,
+      emiBasis: loan.emiBasis,
+      interestMethod: loan.interestMethod,
+      preEmiInterestOnly: loan.preEmiInterestOnly,
+      emiOverride: loan.emiOverride == null ? null : asPaise(loan.emiOverride),
+      disbursements: disbursements.map((item) => ({ date: asIsoDate(item.date), amount: asPaise(item.amount) })),
+      payments: payments.map((item) => ({ date: asIsoDate(item.date), amount: asPaise(item.amount) })),
+    });
+    const disbursed = disbursements.reduce((sum, item) => sum + item.amount, 0);
+    response.json({
+      disbursed: asPaise(disbursed),
+      undisbursed: asPaise(Math.max(0, loan.sanctionedAmount - disbursed)),
+      outstanding: rows.at(-1)?.outstandingPrincipal ?? asPaise(disbursed),
+      unpaidInterest: rows.at(-1)?.unpaidInterest ?? asPaise(0),
+      rows,
+    });
   });
 
   router.get("/:id/timeline", (request, response) => {

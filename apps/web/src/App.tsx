@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   Link,
@@ -6,6 +7,7 @@ import {
   Outlet,
   useLocation,
   useSearchParams,
+  useNavigate,
 } from "react-router-dom";
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
@@ -90,12 +92,21 @@ function EmptyLoans() {
 
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [dark, setDark] = useState(() => localStorage.getItem("loan-theme") === "dark");
   const loansQuery = useQuery({
     queryKey: loanQueryKey,
     queryFn: () => apiRequest<LoanListItem[]>("/api/loans"),
   });
   const loans = loansQuery.data ?? [];
+  const deleteLoanMutation = useMutation({
+    mutationFn: (id: string) => apiRequest<void>(`/api/loans/${id}`, { method: "DELETE" }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: loanQueryKey });
+      navigate("/");
+    },
+  });
   const summaries = useQueries({
     queries: loans.map((loan) => ({
       queryKey: ["loans", loan.id, "summary"],
@@ -159,20 +170,14 @@ function AppShell() {
           {loans.map((loan, index) => {
             const balance = summaries[index]?.data?.summary.outstandingPrincipal;
             return (
-              <NavLink
-                key={loan.id}
-                to={`/loans/${loan.id}${location.search}`}
-                className={({ isActive }) => `loan-link${isActive ? " is-active" : ""}`}
-              >
-                <span className={`loan-avatar avatar-${index % 4}`} aria-hidden="true">
-                  {loan.name.slice(0, 1).toUpperCase()}
-                </span>
-                <span className="loan-link-copy">
-                  <span className="loan-link-name">{loan.name}</span>
-                  <span className="loan-link-meta">{displayMoney(balance)}</span>
-                </span>
-                <span className={`loan-status-badge loan-status-${loan.status}`}>{loan.status}</span>
-              </NavLink>
+              <div className="loan-selector-row" key={loan.id}>
+                <NavLink to={`/loans/${loan.id}${location.search}`} className={({ isActive }) => `loan-link${isActive ? " is-active" : ""}`}>
+                  <span className={`loan-avatar avatar-${index % 4}`} aria-hidden="true">{loan.name.slice(0, 1).toUpperCase()}</span>
+                  <span className="loan-link-copy"><span className="loan-link-name">{loan.name}</span><span className="loan-link-meta">{displayMoney(balance)}</span></span>
+                  <span className={`loan-status-badge loan-status-${loan.status}`}>{loan.status}</span>
+                </NavLink>
+                <button className="loan-delete-button" type="button" aria-label={`Delete ${loan.name}`} title="Move loan to Trash" onClick={() => { if (window.confirm(`Move “${loan.name}” and its entries to Trash?`)) deleteLoanMutation.mutate(loan.id); }}>×</button>
+              </div>
             );
           })}
         </nav>

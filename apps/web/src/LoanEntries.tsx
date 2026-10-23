@@ -52,6 +52,14 @@ interface FormValues {
   paymentId: string;
 }
 
+interface PaymentBreakdownData {
+  disbursed: number;
+  undisbursed: number;
+  outstanding: number;
+  unpaidInterest: number;
+  rows: { date: string; amount: number; interestPart: number; principalPart: number; outstandingPrincipal: number; unpaidInterest: number; warning: string | null }[];
+}
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -98,6 +106,11 @@ export function paymentEntriesCsv(rows: readonly Pick<EntryRecord, "date" | "amo
 }
 
 export function LoanEntries({ loanId }: { loanId: string }) {
+  const entryPageSize = 10;
+  const [entryPage, setEntryPage] = useState(0);
+  const [entryOrder, setEntryOrder] = useState<"asc" | "desc">("asc");
+  const [entryFilter, setEntryFilter] = useState<"all" | EntryType>("all");
+  const [entrySearch, setEntrySearch] = useState("");
   const queryClient = useQueryClient();
   const [entryType, setEntryType] = useState<EntryType>("payment");
   const [editing, setEditing] = useState<EntryRecord | null>(null);
@@ -119,6 +132,10 @@ export function LoanEntries({ loanId }: { loanId: string }) {
       return results.flatMap((result) => result.records.map((record) => ({ ...record, entryType: result.type })));
     },
   });
+  const breakdownQuery = useQuery({
+    queryKey: ["loans", loanId, "payment-breakdown"],
+    queryFn: () => apiRequest<PaymentBreakdownData>(`/api/loans/${loanId}/payment-breakdown`),
+  });
   const mutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => apiRequest<EntryRecord>(
       editing ? `/api/${itemType.route}/${editing.id}` : `/api/loans/${loanId}/${itemType.route}`,
@@ -132,6 +149,7 @@ export function LoanEntries({ loanId }: { loanId: string }) {
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "entries"] }),
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "summary"] }),
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "timeline"] }),
+        queryClient.invalidateQueries({ queryKey: ["loans", loanId, "payment-breakdown"] }),
       ]);
     },
     onError: (error) => setFormError(error.message),
@@ -147,6 +165,7 @@ export function LoanEntries({ loanId }: { loanId: string }) {
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "entries"] }),
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "summary"] }),
         queryClient.invalidateQueries({ queryKey: ["loans", loanId, "timeline"] }),
+        queryClient.invalidateQueries({ queryKey: ["loans", loanId, "payment-breakdown"] }),
       ]);
     },
   });
@@ -237,6 +256,20 @@ export function LoanEntries({ loanId }: { loanId: string }) {
   }
 
   const entries = listQueries.data ?? [];
+  const filteredEntries = entries.filter((entry) => {
+    const type = entry.entryType as EntryType;
+    const matchesType = entryFilter === "all" || type === entryFilter;
+    const searchable = [entryTitle(entry, type), entryDate(entry), entry.note, entry.text, entry.amount]
+      .filter((value) => value !== null && value !== undefined)
+      .join(" ").toLocaleLowerCase();
+    return matchesType && searchable.includes(entrySearch.trim().toLocaleLowerCase());
+  });
+  const sortedEntries = [...filteredEntries].sort((left, right) => {
+    const order = entryDate(left).localeCompare(entryDate(right)) || left.id.localeCompare(right.id);
+    return entryOrder === "asc" ? order : -order;
+  });
+  const entryPageCount = Math.ceil(sortedEntries.length / entryPageSize);
+  const visibleEntries = sortedEntries.slice(entryPage * entryPageSize, (entryPage + 1) * entryPageSize);
   return (
     <div className="entries-layout" role="tabpanel">
       <section className="entry-form-card">
@@ -287,16 +320,29 @@ export function LoanEntries({ loanId }: { loanId: string }) {
       </section>
       <section className="entry-list-card">
         <div className="chart-heading"><div><h2>Recorded entries</h2><p>Changes update this loan’s calculations.</p></div><button className="button button-secondary" type="button" onClick={exportPayments} disabled={!entries.some((entry) => entry.entryType === "payment")}>Export payments CSV</button></div>
+        {breakdownQuery.data && typeof breakdownQuery.data.disbursed === "number" && Array.isArray(breakdownQuery.data.rows) && <section className="payment-breakdown" aria-label="EMI payment breakdown">
+          <h3>Disbursed loan and payment breakdown</h3>
+          <div className="funding-derived"><div><span>Disbursed</span><strong>{formatIndianMoney(asPaise(breakdownQuery.data.disbursed))}</strong></div><div><span>Undisbursed</span><strong>{formatIndianMoney(asPaise(breakdownQuery.data.undisbursed))}</strong></div><div><span>Outstanding disbursed principal</span><strong>{formatIndianMoney(asPaise(breakdownQuery.data.outstanding))}</strong></div></div>
+          {breakdownQuery.data.unpaidInterest > 0 && <p className="notice notice-warning" role="status">Unpaid interest of {formatIndianMoney(asPaise(breakdownQuery.data.unpaidInterest))} is carried forward.</p>}
+          <div className="recorded-entries-scroll" role="region" aria-label="Payment interest and principal breakdown" tabIndex={0}><table className="data-table"><thead><tr><th>Date</th><th>Amount paid</th><th>Interest part</th><th>Principal part</th><th>Outstanding principal</th></tr></thead><tbody>{breakdownQuery.data.rows.map((row, index) => <tr key={`${row.date}-${index}`}><td>{row.date}</td><td>{formatIndianMoney(asPaise(row.amount))}</td><td>{formatIndianMoney(asPaise(row.interestPart))}</td><td>{formatIndianMoney(asPaise(row.principalPart))}</td><td>{formatIndianMoney(asPaise(row.outstandingPrincipal))}</td></tr>)}</tbody></table></div>
+        </section>}
+        <div className="recorded-entry-filters">
+          <label className="form-field" htmlFor="recorded-entry-type">Filter by type<select id="recorded-entry-type" value={entryFilter} onChange={(event) => { setEntryFilter(event.target.value as "all" | EntryType); setEntryPage(0); }}><option value="all">All entries</option>{entryTypes.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
+          <label className="form-field" htmlFor="recorded-entry-search">Search entries<input id="recorded-entry-search" type="search" value={entrySearch} onChange={(event) => { setEntrySearch(event.target.value); setEntryPage(0); }} placeholder="Search date, type, note" /></label>
+          <label className="form-field" htmlFor="recorded-entry-order">Sort by date<select id="recorded-entry-order" value={entryOrder} onChange={(event) => { setEntryOrder(event.target.value as "asc" | "desc"); setEntryPage(0); }}><option value="asc">Oldest first</option><option value="desc">Newest first</option></select></label>
+        </div>
         {listQueries.isPending ? <div className="panel-skeleton" aria-label="Loading entries" /> : listQueries.error ? <div className="notice notice-error" role="alert">Could not load loan entries.</div> : entries.length === 0 ? <p className="entry-empty">No entries recorded yet.</p> : (
-          <ul className="entry-list">{[...entries].sort((left, right) => entryDate(right).localeCompare(entryDate(left))).map((entry) => {
+          <>{sortedEntries.length === 0 ? <p className="entry-empty">No entries match these filters.</p> : <><div className="recorded-entries-scroll" role="region" aria-label="Recorded entries" tabIndex={0}><ul className="entry-list">{visibleEntries.map((entry) => {
             const type = entry.entryType as EntryType;
             const label = entryTypes.find((item) => item.value === type)!.label;
-            return <li className="entry-row" key={`${type}-${entry.id}`}>
-              <div><span className="entry-kind">{label}</span><strong>{entryTitle(entry, type)}</strong><span className="entry-date">{entryDate(entry)}</span></div>
+            const completed = type === "payment" && entry.status === "paid" && entry.type === "emi";
+            const noteText = type === "note" ? entry.text : entry.note;
+            return <li className={`entry-row${completed ? " is-completed" : ""}`} key={`${type}-${entry.id}`}>
+              <div>{typeof noteText === "string" && noteText.trim() !== "" && <span className="entry-note">{noteText}</span>}<span className="entry-kind">{label}</span><strong>{completed ? "EMI · Completed" : type === "note" ? "Note" : entryTitle(entry, type)}</strong><span className="entry-date">{entryDate(entry)}</span></div>
               {typeof entry.amount === "number" && <span className="entry-amount">{formatIndianMoney(asPaise(entry.amount))}</span>}
               <div className="entry-row-actions">{type === "payment" && entry.status === "scheduled" && <button className="button button-primary" type="button" onClick={() => beginMarkPaid(entry as EntryRecord & { entryType: EntryType })}>Mark paid</button>}<button className="button button-secondary" type="button" onClick={() => beginEdit(entry as EntryRecord & { entryType: EntryType })}>Edit</button><button className="button button-danger" type="button" onClick={() => { if (window.confirm(`Delete this ${label.toLowerCase()}? It will move to Trash.`)) deleteMutation.mutate(entry as EntryRecord); }}>Delete</button></div>
             </li>;
-          })}</ul>
+          })}</ul></div>{entryPageCount > 1 && <nav className="upcoming-pagination" aria-label="Recorded entries pages"><span>Showing {entryPage * entryPageSize + 1}–{Math.min((entryPage + 1) * entryPageSize, sortedEntries.length)} of {sortedEntries.length}</span><div><button type="button" className="button button-secondary" disabled={entryPage === 0} onClick={() => setEntryPage((page) => page - 1)}>Previous</button><span>Page {entryPage + 1} of {entryPageCount}</span><button type="button" className="button button-secondary" disabled={entryPage + 1 >= entryPageCount} onClick={() => setEntryPage((page) => page + 1)}>Next</button></div></nav>}</>}</>
         )}
         {deleteMutation.error && <p className="field-error" role="alert">{deleteMutation.error.message}</p>}
       </section>

@@ -120,6 +120,43 @@ describe("loan REST endpoints", () => {
     expect(summary.body.summary.sanctionedNotDisbursed).toBe(2_000_000);
   });
 
+  it("calculates EMIs from the selected sanctioned or disbursed principal", async () => {
+    const create = (basis: "sanctioned" | "disbursed") => request(app).post("/api/loans").send({
+      ...validLoan,
+      emiBasis: basis === "sanctioned" ? "SANCTIONED" : "DISBURSED",
+      initialLoanUtilized: 5_000_000,
+    });
+    const sanctionedLoan = await create("sanctioned");
+    const disbursedLoan = await create("disbursed");
+    const sanctionedSchedule = await request(app).get(`/api/loans/${sanctionedLoan.body.id}/schedule`);
+    const disbursedSchedule = await request(app).get(`/api/loans/${disbursedLoan.body.id}/schedule`);
+    expect(sanctionedSchedule.body[0].emi).toBeGreaterThan(disbursedSchedule.body[0].emi);
+    expect(sanctionedSchedule.body[0].openingBalance).toBe(10_000_000);
+    expect(disbursedSchedule.body[0].openingBalance).toBe(5_000_000);
+  });
+
+  it("returns the calculated payment split and disbursement balances", async () => {
+    const created = await request(app).post("/api/loans").send({
+      ...validLoan,
+      sanctionedAmount: 900_000_000,
+      annualRatePercent: 7.4,
+      tenureMonths: 189,
+      emiBasis: "SANCTIONED",
+      interestMethod: "MONTHLY",
+      initialLoanUtilized: 250_000_000,
+    });
+    const id = created.body.id as string;
+    await request(app).post(`/api/loans/${id}/payments`).send({
+      date: "2026-11-01", amount: 8_077_000, type: "emi",
+      principalPart: 0, interestPart: 0, status: "paid",
+    });
+    const result = await request(app).get(`/api/loans/${id}/payment-breakdown`);
+    expect(result.status).toBe(200);
+    expect(result.body.disbursed).toBe(250_000_000);
+    expect(result.body.undisbursed).toBe(650_000_000);
+    expect(result.body.rows[0]).toMatchObject({ interestPart: 1_541_667, principalPart: 6_535_333 });
+  });
+
   it("generates scheduled EMI entries idempotently and refreshes only still-scheduled rows", async () => {
     const created = await request(app).post("/api/loans").send(validLoan);
     const id = created.body.id as string;
@@ -147,6 +184,32 @@ describe("loan REST endpoints", () => {
       date: "2026-11-08",
       amount: 999_999_999,
     });
+  });
+
+  it("marks generated EMIs due through today as paid in entries and activity", async () => {
+    const created = await request(app).post("/api/loans").send({
+      ...validLoan,
+      tenureMonths: 12,
+      startDate: "2026-01-01",
+    });
+    const id = created.body.id as string;
+    await request(app).post(`/api/loans/${id}/payments/generate-scheduled`).send();
+
+    const today = new Date();
+    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const payments = (await request(app).get(`/api/loans/${id}/payments`)).body as {
+      date: string;
+      status: string;
+    }[];
+    expect(payments.filter((payment) => payment.date <= todayIso).length).toBeGreaterThan(0);
+    expect(payments.filter((payment) => payment.date <= todayIso).every((payment) => payment.status === "paid")).toBe(true);
+    expect(payments.filter((payment) => payment.date > todayIso).every((payment) => payment.status === "scheduled")).toBe(true);
+
+    const timeline = (await request(app).get(`/api/loans/${id}/timeline?type=payment&order=asc`)).body as {
+      date: string;
+      status: string;
+    }[];
+    expect(timeline.filter((item) => item.date <= todayIso).every((item) => item.status === "paid")).toBe(true);
   });
 
   it("applies simulated one-time, recurring, and rate-change plans as loan entries", async () => {

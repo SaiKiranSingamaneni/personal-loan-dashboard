@@ -33,6 +33,9 @@ interface LoanRecord {
   tenureMonths: number;
   startDate: string;
   emiDueDay: number;
+  emiBasis: LoanFormValues["emiBasis"];
+  preEmiInterestOnly: boolean;
+  interestMethod: LoanFormValues["interestMethod"];
   emiOverride: number | null;
   processingFee: number | null;
   otherCharges: number | null;
@@ -94,18 +97,19 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
     cost = values.propertyCost === "" ? 0 : rupeesToPaise(values.propertyCost);
     const rate = Number(values.annualRatePercent);
     const months = Number(values.tenureMonths);
-    if (sanctioned > 0 && Number.isFinite(rate) && Number.isInteger(months) && months > 0) {
-      const calculatedEmi = calculateEmi(asPaise(sanctioned), rate, months);
+    const emiPrincipal = values.emiBasis === "SANCTIONED" || utilized === 0 ? sanctioned : utilized;
+    if (emiPrincipal > 0 && Number.isFinite(rate) && Number.isInteger(months) && months > 0) {
+      const calculatedEmi = calculateEmi(asPaise(emiPrincipal), rate, months);
       const override = values.emiOverride === "" ? null : rupeesToPaise(values.emiOverride);
       const schedule = override === null
         ? createAmortizationSchedule({
-            principal: asPaise(sanctioned),
+            principal: asPaise(emiPrincipal),
             annualRatePercent: rate,
             tenureMonths: months,
             firstDueDate: dueDateFrom(values.startDate, values.emiDueDay),
           })
         : createScheduleWithFixedEmi(
-            asPaise(sanctioned),
+            asPaise(emiPrincipal),
             rate,
             asPaise(override),
             1200,
@@ -117,7 +121,7 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
       emi = formatIndianMoney(asPaise(emiValue));
       totalInterest = formatIndianMoney(asPaise(interest));
       totalPayable = formatIndianMoney(asPaise(payable));
-      interestPercent = `${((interest / sanctioned) * 100).toFixed(1)}%`;
+      interestPercent = `${((interest / emiPrincipal) * 100).toFixed(1)}%`;
     }
   } catch {
     // Inline field validation explains incomplete or invalid values while typing.
@@ -155,6 +159,9 @@ function toPayload(values: LoanFormValues) {
     tenureMonths: Number(values.tenureMonths),
     startDate: values.startDate,
     emiDueDay: Number(values.emiDueDay),
+    emiBasis: values.emiBasis,
+    preEmiInterestOnly: values.preEmiInterestOnly,
+    interestMethod: values.interestMethod,
     emiOverride: optionalPaise(values.emiOverride),
     processingFee: optionalPaise(values.processingFee),
     otherCharges: optionalPaise(values.otherCharges),
@@ -200,6 +207,9 @@ export function LoanFormPage() {
   const { reset } = form;
   const values = form.watch();
   const derived = useMemo(() => calculateDerived(values), [values]);
+  const sanctionedPaise = values.sanctionedAmount === "" ? 0 : Number(values.sanctionedAmount.replaceAll(",", "")) * 100;
+  const disbursedPaise = values.initialLoanUtilized === "" ? 0 : Number(values.initialLoanUtilized.replaceAll(",", "")) * 100;
+  const showEmiBasis = sanctionedPaise > disbursedPaise;
 
   useEffect(() => {
     if (
@@ -221,6 +231,9 @@ export function LoanFormPage() {
         tenureMonths: loan.tenureMonths.toString(),
         startDate: loan.startDate,
         emiDueDay: loan.emiDueDay.toString(),
+        emiBasis: loan.emiBasis,
+        preEmiInterestOnly: loan.preEmiInterestOnly,
+        interestMethod: loan.interestMethod,
         emiOverride: amountString(loan.emiOverride),
         processingFee: amountString(loan.processingFee),
         otherCharges: amountString(loan.otherCharges),
@@ -294,7 +307,7 @@ export function LoanFormPage() {
     );
   }
 
-  function select(name: "loanType" | "rateType" | "status" | "emiStartRule", label: string, choices: readonly [string, string][]) {
+  function select(name: "loanType" | "rateType" | "status" | "emiStartRule" | "emiBasis" | "interestMethod", label: string, choices: readonly [string, string][]) {
     const error = fieldError(name);
     return (
       <label className="form-field" htmlFor={name}>
@@ -343,6 +356,7 @@ export function LoanFormPage() {
             {field("tenureMonths", "Tenure (months)", { required: true, inputMode: "numeric", placeholder: "240" })}
             {field("startDate", "Loan start date", { required: true, type: "date" })}
             {field("emiDueDay", "EMI due day", { required: true, inputMode: "numeric", placeholder: "5" })}
+            {select("interestMethod", "Interest calculation", [["DAILY", "Daily (actual days / 365)"], ["MONTHLY", "Monthly"]])}
             {field("emiOverride", "Manual EMI override", { inputMode: "decimal", placeholder: "Leave blank to calculate" })}
             {select("status", "Loan status", [["active", "Active"], ["closed", "Closed"]])}
             {field("processingFee", "Processing fee", { inputMode: "decimal", placeholder: "Optional" })}
@@ -374,6 +388,8 @@ export function LoanFormPage() {
         <fieldset className="form-section">
           <legend><span className="section-number">03</span> EMI start rule</legend>
           <div className="form-grid">
+            {showEmiBasis && <label className="form-field" htmlFor="emiBasis"><span>Is your EMI calculated on the sanctioned amount or on the disbursed amount?</span><select id="emiBasis" {...form.register("emiBasis")}><option value="SANCTIONED">Sanctioned amount — EMI fixed on full amount from the start</option><option value="DISBURSED">Disbursed amount — EMI recalculated after each disbursement</option></select></label>}
+            {showEmiBasis && <label className="form-field checkbox-field"><input type="checkbox" {...form.register("preEmiInterestOnly")} /><span>Before final disbursement, collect interest only</span></label>}
             {select("emiStartRule", "EMI begins", [["full-disbursement", "After full disbursement"], ["date", "On a set date"]])}
             {values.emiStartRule === "date" && field("emiStartDate", "EMI start date", { required: true, type: "date" })}
           </div>

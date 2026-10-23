@@ -88,6 +88,9 @@ export function getTimeline(
   ];
 
   const filtered = entries.filter((item) => {
+    if (query.completedEmis === "true" && !(item.type === "payment" && item.status === "paid" && item.detail.startsWith("emi"))) {
+      return false;
+    }
     if (query.type !== undefined && item.type !== query.type) {
       return false;
     }

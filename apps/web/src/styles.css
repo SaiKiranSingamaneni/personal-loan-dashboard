@@ -201,6 +201,15 @@ h1, h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; letter-spacin
 .timeline-group-heading h3 { margin: 0; color: var(--text); font-size: 13px; }
 .timeline-group-heading > span { color: var(--muted); font-size: 10px; }
 .timeline-list { position: relative; display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.upcoming-table-scroll { max-height: 360px; overflow: auto; padding: 0 5px 5px 0; scrollbar-color: var(--muted) var(--surface-soft); scrollbar-width: auto; }
+.upcoming-table-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.upcoming-table-scroll::-webkit-scrollbar-track { border-radius: 8px; background: var(--surface-soft); }
+.upcoming-table-scroll::-webkit-scrollbar-thumb { border: 2px solid var(--surface-soft); border-radius: 8px; background: var(--muted); }
+.upcoming-pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; color: var(--muted); font-size: 11px; }
+.upcoming-pagination > div { display: flex; align-items: center; gap: 10px; }
+.timeline-item.is-completed .timeline-item-copy strong { color: var(--muted); text-decoration: line-through; }
+.timeline-item.is-completed .timeline-marker { background: var(--muted); }
+.timeline-item.is-completed .entry-amount, .timeline-item.is-completed .entry-date { color: var(--muted); }
 .timeline-item { position: relative; display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .timeline-item.is-upcoming { border-color: color-mix(in srgb, #4d71dc 30%, var(--line)); background: color-mix(in srgb, #4d71dc 4%, var(--surface)); }
 .timeline-item.is-overdue { border-color: color-mix(in srgb, #c95850 42%, var(--line)); background: color-mix(in srgb, #c95850 5%, var(--surface)); }
@@ -227,9 +236,20 @@ html[data-theme="dark"] .state-overdue { background: #492b2a; color: #f38b81; }
 .entry-actions, .entry-row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .entry-empty { padding: 26px 12px; color: var(--muted); font-size: 12px; text-align: center; }
 .entry-list { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
+.recorded-entries-scroll { max-height: min(60vh, 560px); overflow: auto; padding: 0 6px 5px 0; scrollbar-color: var(--muted) var(--surface-soft); scrollbar-width: auto; }
+.recorded-entries-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.recorded-entries-scroll::-webkit-scrollbar-track { border-radius: 8px; background: var(--surface-soft); }
+.recorded-entries-scroll::-webkit-scrollbar-thumb { border: 2px solid var(--surface-soft); border-radius: 8px; background: var(--muted); }
+.recorded-entry-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 0 14px; }
+.recorded-entry-filters .form-field { font-size: 11px; }
+.recorded-entry-filters input, .recorded-entry-filters select { width: 100%; min-height: 37px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 500 11px ui-sans-serif, system-ui, sans-serif; }
+.entry-row.is-completed { background: var(--surface-soft); }
+.entry-row.is-completed strong, .entry-row.is-completed .entry-date, .entry-row.is-completed .entry-amount { color: var(--muted); }
+.entry-row.is-completed strong { text-decoration: line-through; }
 .entry-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
 .entry-row > div:first-child { display: grid; gap: 4px; min-width: 0; }
 .entry-kind, .entry-date { color: var(--muted); font-size: 10px; }
+.entry-note { overflow-wrap: anywhere; color: var(--text); font-size: 11px; font-weight: 600; line-height: 1.4; }
 .entry-row strong { overflow-wrap: anywhere; color: var(--text); font-size: 12px; }
 .entry-amount { color: var(--text); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .entry-row-actions { grid-column: 1 / -1; }
@@ -237,6 +257,7 @@ html[data-theme="dark"] .state-overdue { background: #492b2a; color: #f38b81; }
 html[data-theme="dark"] .button-danger { color: #f38b81; }
 @media (max-width: 900px) { .entries-layout { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .timeline-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .timeline-item { grid-template-columns: 8px minmax(0, 1fr); } .timeline-item-end { grid-column: 2; justify-content: flex-start; } }
+@media (max-width: 700px) { .recorded-entry-filters { grid-template-columns: 1fr; } .upcoming-pagination { align-items: flex-start; flex-direction: column; } .upcoming-pagination > div { flex-wrap: wrap; } }
 .placeholder-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 .placeholder-metrics div { display: grid; gap: 8px; padding: 20px 14px 0 0; }
 .placeholder-metrics span { color: var(--muted); font-size: 10px; }
@@ -429,3 +450,10 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
   .due-reminder-banner { width: calc(100% - 24px); align-items: stretch; flex-direction: column; margin-top: 12px; }
   .due-reminder-banner ul { justify-content: flex-start; }
 }
+.loan-selector-row { display: flex; align-items: center; gap: 0.25rem; }
+.loan-selector-row .loan-link { flex: 1; min-width: 0; }
+.loan-delete-button { width: 1.8rem; height: 1.8rem; border: 0; border-radius: 0.4rem; background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+.loan-delete-button:hover, .loan-delete-button:focus-visible { color: var(--danger); background: var(--surface-raised); }
+.checkbox-field { display: flex; align-items: center; gap: 0.6rem; }
+.checkbox-field input { width: auto; }
+.payment-breakdown { display: grid; gap: 0.8rem; margin: 1rem 0; }

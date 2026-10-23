@@ -1,5 +1,5 @@
 # Build state
-Current task: P8-T2 - Last updated: 2026-10-23
+Current task: P8-T3 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -40,7 +40,7 @@ Current task: P8-T2 - Last updated: 2026-10-23
 - [x] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
 - [x] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
 - [x] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
-- [ ] P8-T2 Optional Playwright smoke test of the main flow.
+- [x] P8-T2 Optional Playwright smoke test of the main flow (covered by the existing React Testing Library smoke flow; Playwright omitted).
 - [ ] P8-T3 Walk through every item in section 10, record the result in `docs/BUILD_STATE.md`, fix failures.
 
 ## Phase gates
@@ -76,6 +76,7 @@ Current task: P8-T2 - Last updated: 2026-10-23
 - 2026-10-23 - Define the versioned JSON export schema in the shared package for both browser preflight and API validation - ensures import preview uses the same record rules as the server.
 - 2026-10-23 - Sort Trash newest-deleted first and require both browser confirmation and the API's `DELETE` token before hard deletion - keeps recovery actions visible and permanent removal deliberate.
 - 2026-10-23 - Ignore only the regenerated `exportedAt` metadata when asserting a full import/export round trip - exports intentionally record the time of each export, while all persisted loan data must match.
+- 2026-10-23 - Omit the optional Playwright runner because it is not installed and no browser binary is available; retain the existing React Testing Library end-to-end smoke flow - avoids adding a separate browser runtime for the same main flow.
 
 ## Blockers
 - none
@@ -125,3 +126,4 @@ Current task: P8-T2 - Last updated: 2026-10-23
 - 2026-10-23 - P7-T3 - Added visible keyboard focus, readable loan status badges, improved muted text contrast, retained the theme toggle on narrow screens, and tested light/dark persistence; `npm run verify` passes (80 tests) and production build succeeds - P7-T4 performance check remains.
 - 2026-10-23 - P7-T4 - Exercised dashboard bootstrap endpoints using five loans with 600 payment records each and confirmed the full export/import data round trip; generated dataset requests completed under one second and `npm run verify` passes (81 tests) - P7 gate passes; P8-T1 README handover remains.
 - 2026-10-23 - P8-T1 - Completed setup, command, workspace, exact rounding, backup/restore, JSON transfer, and future Postgres adapter documentation; `npm run verify` passes (81 tests) - P8-T2 optional Playwright smoke test remains.
+- 2026-10-23 - P8-T2 - Used the existing React Testing Library main-flow smoke test; Playwright was omitted because the package and browser are unavailable and the task is optional - P8-T3 section 10 acceptance walkthrough remains.

@@ -1,5 +1,5 @@
 # Build state
-Current task: P7-T1 - Last updated: 2026-10-23
+Current task: P7-T2 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -35,7 +35,7 @@ Current task: P7-T1 - Last updated: 2026-10-23
 - [x] P6-T1 All-loans overview (totals, per-loan comparison chart, combined upcoming dues).
 - [x] P6-T2 What-if simulator UI with Apply, and the standalone EMI calculator.
 - [x] P6-T3 In-app due reminders (7-day banner, overdue count in the sidebar).
-- [ ] P7-T1 Export/import UI with validation preview, per-loan CSV export.
+- [x] P7-T1 Export/import UI with validation preview, per-loan CSV export.
 - [ ] P7-T2 Trash view with restore and permanent delete.
 - [ ] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
 - [ ] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
@@ -49,7 +49,7 @@ Current task: P7-T1 - Last updated: 2026-10-23
 - [x] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
 - [x] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
 - [x] P4 - Timeline sorts entries and distinguishes future and overdue items.
-- [ ] P5 - All charts have tooltips/legends and update on loan switch.
+- [x] P5 - All charts have tooltips/legends and update on loan switch.
 - [x] P6 - Overview totals equal the sum of individual loans.
 - [ ] P7 - Export/import round trip is identical; dashboard loads under 1 second on the large dataset.
 - [ ] P8 - Section 10 acceptance criteria pass; tag `v1.0.0`.
@@ -73,6 +73,7 @@ Current task: P7-T1 - Last updated: 2026-10-23
 - 2026-10-23 - Use the loan summary's next unpaid installment for combined upcoming dues and count all non-deleted loans in overview totals - keeps the overview consistent with the per-loan summary values.
 - 2026-10-23 - Persist an applied what-if as payment or rate-change records inside one repository transaction - ensures recurring plans are all-or-nothing and all applied scenarios remain editable in the loan history.
 - 2026-10-23 - Derive 7-day reminders and overdue counts from each loan's schedule - makes reminders available on every route even before Activity has generated payment records.
+- 2026-10-23 - Define the versioned JSON export schema in the shared package for both browser preflight and API validation - ensures import preview uses the same record rules as the server.
 
 ## Blockers
 - none
@@ -117,3 +118,4 @@ Current task: P7-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P6-T2 - Added one-time/recurring prepayment and rate-change simulation with explicit Apply plus a standalone EMI calculator; applied plans save as loan entries transactionally; 76 tests pass and production build succeeds - P6-T3 due reminders remain.
 - 2026-10-23 - P6-T3 - Added the next-seven-days due banner and sidebar overdue count using schedule status and local date boundaries; 77 tests pass and production build succeeds - P6 totals gate passes; P7-T1 data export/import UI is next.
 - 2026-10-23 - P6 gate - Verified overview totals against individual loan summaries and completed planning tools and due reminders; full verification passes (77 tests) and production build succeeds - P7-T1 is next.
+- 2026-10-23 - P7-T1 - Added Data and backups page for JSON export, shared-schema validation preview, confirmed overwrite, manual backup, and payment CSV export; amortization CSV is available in Schedule; 79 tests pass and production build succeeds - P7-T2 Trash view remains.

@@ -83,6 +83,20 @@ function cents(value: string): number {
   return value.trim() === "" ? 0 : rupeesToPaise(value);
 }
 
+function csvField(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+}
+
+export function paymentEntriesCsv(rows: readonly Pick<EntryRecord, "date" | "amount" | "type" | "principalPart" | "interestPart" | "status" | "note">[]): string {
+  const header = ["Date", "Type", "Amount (INR)", "Principal (INR)", "Interest (INR)", "Status", "Note"];
+  const lines = rows.map((row) => [
+    row.date ?? "", row.type ?? "", ((row.amount ?? 0) / 100).toFixed(2),
+    ((row.principalPart ?? 0) / 100).toFixed(2), ((row.interestPart ?? 0) / 100).toFixed(2),
+    row.status ?? "", row.note ?? "",
+  ]);
+  return [header, ...lines].map((line) => line.map(csvField).join(",")).join("\r\n");
+}
+
 export function LoanEntries({ loanId }: { loanId: string }) {
   const queryClient = useQueryClient();
   const [entryType, setEntryType] = useState<EntryType>("payment");
@@ -175,6 +189,17 @@ export function LoanEntries({ loanId }: { loanId: string }) {
     setValues((previous) => ({ ...previous, date: todayIso(), status: "paid" }));
   }
 
+  function exportPayments() {
+    const payments = entries.filter((entry) => entry.entryType === "payment");
+    const blob = new Blob([paymentEntriesCsv(payments)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `loan-${loanId}-payments.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
@@ -261,7 +286,7 @@ export function LoanEntries({ loanId }: { loanId: string }) {
         </form>
       </section>
       <section className="entry-list-card">
-        <div className="chart-heading"><div><h2>Recorded entries</h2><p>Changes update this loan’s calculations.</p></div></div>
+        <div className="chart-heading"><div><h2>Recorded entries</h2><p>Changes update this loan’s calculations.</p></div><button className="button button-secondary" type="button" onClick={exportPayments} disabled={!entries.some((entry) => entry.entryType === "payment")}>Export payments CSV</button></div>
         {listQueries.isPending ? <div className="panel-skeleton" aria-label="Loading entries" /> : listQueries.error ? <div className="notice notice-error" role="alert">Could not load loan entries.</div> : entries.length === 0 ? <p className="entry-empty">No entries recorded yet.</p> : (
           <ul className="entry-list">{[...entries].sort((left, right) => entryDate(right).localeCompare(entryDate(left))).map((entry) => {
             const type = entry.entryType as EntryType;

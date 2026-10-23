@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { LoanEntries } from "./LoanEntries.js";
+import { LoanEntries, paymentEntriesCsv } from "./LoanEntries.js";
 
 function response(body: unknown, status = 200): Response {
   return new Response(status === 204 ? null : JSON.stringify(body), {
@@ -16,6 +16,16 @@ describe("loan entry forms", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it("exports payment amounts as readable INR values", () => {
+    expect(paymentEntriesCsv([{
+      date: "2026-10-05", amount: 100000, type: "emi", principalPart: 70000,
+      interestPart: 30000, status: "paid", note: "October, paid",
+    }]).split("\r\n")).toEqual([
+      "Date,Type,Amount (INR),Principal (INR),Interest (INR),Status,Note",
+      '2026-10-05,emi,1000.00,700.00,300.00,paid,"October, paid"',
+    ]);
   });
 
   it("adds, edits, and soft-deletes notes through the loan entry API", async () => {

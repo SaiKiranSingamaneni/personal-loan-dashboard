@@ -180,7 +180,7 @@ function errorMessage(error: unknown): string {
   return error instanceof ApiClientError ? error.message : "Could not save this loan.";
 }
 
-export function LoanFormPage() {
+export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { loanId } = useParams();
   const isEditing = loanId !== undefined && loanId !== "new";
   const navigate = useNavigate();
@@ -272,7 +272,7 @@ export function LoanFormPage() {
     },
     onSuccess: async (loan) => {
       await queryClient.invalidateQueries({ queryKey: ["loans"] });
-      navigate(`/loans/${loan.id}?tab=${searchParams.get("tab") ?? "overview"}`);
+      navigate(`/loans/${loan.id}?tab=${searchParams.get("tab") ?? (isEditing ? "details" : "dashboard")}`);
     },
   });
 
@@ -326,15 +326,25 @@ export function LoanFormPage() {
 
   return (
     <section className="loan-form-page">
-      <div className="form-page-heading">
+      {!embedded && <div className="form-page-heading">
         <div>
-          <Link className="back-link" to={isEditing ? `/loans/${loanId}` : "/"}>← Back to loans</Link>
+          <Link className="back-link" to={isEditing ? `/loans/${loanId}?tab=dashboard` : "/"}>← Back to loans</Link>
           <div className="eyebrow">LOAN SETUP</div>
-          <h1>{isEditing ? "Edit loan details" : "Add a loan"}</h1>
+          <h1>{isEditing ? "Loan details" : "Add a loan"}</h1>
           <p>Enter the loan and property funding details. Money is saved in paise.</p>
         </div>
         {isEditing && <span className="status-pill">Editing</span>}
-      </div>
+      </div>}
+
+      {!embedded && isEditing && <nav className="tabs loan-edit-tabs" role="tablist" aria-label="Loan sections">
+        {[["dashboard", "Dashboard"], ["activity", "Activity"], ["analysis", "Analysis"], ["details", "Loan details"]].map(([value, label]) => <Link
+          key={value}
+          role="tab"
+          aria-selected={value === (searchParams.get("tab") ?? "details")}
+          className={`tab${value === (searchParams.get("tab") ?? "details") ? " is-selected" : ""}`}
+          to={value === "details" ? `/loans/${loanId}/edit?tab=details` : `/loans/${loanId}?tab=${value}`}
+        >{label}</Link>)}
+      </nav>}
 
       <div className="derived-strip" aria-live="polite">
         <div><span>Estimated EMI</span><strong>{derived.emi}</strong></div>
@@ -400,7 +410,7 @@ export function LoanFormPage() {
         {mutation.error && <div className="notice notice-error" role="alert">{errorMessage(mutation.error)}</div>}
         {formErrors > 0 && form.formState.isSubmitted && <p className="field-error form-summary-error">Review the highlighted fields before saving.</p>}
         <div className="form-actions">
-          <Link className="button button-secondary" to={isEditing ? `/loans/${loanId}` : "/"}>Cancel</Link>
+          <Link className="button button-secondary" to={isEditing ? `/loans/${loanId}?tab=${searchParams.get("tab") ?? "details"}` : "/"}>Cancel</Link>
           <button className="button button-primary" type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "Saving…" : isEditing ? "Save changes" : "Save loan"}
           </button>

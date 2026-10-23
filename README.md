@@ -2,6 +2,8 @@
 
 A local-first, single-user dashboard for tracking loans, property funding, payments, and repayment plans. The web app and API run on your machine; application data is stored in SQLite and no telemetry or third-party runtime services are used.
 
+Each loan is organized into four sections: **Dashboard** for a plain-language summary and property/funding charts, **Activity** for recording and reviewing transactions, **Analysis** for repayment charts and the amortization table, and **Loan details** for loan terms and itemized property costs.
+
 ## Requirements
 
 - Node.js LTS with npm
@@ -58,6 +60,15 @@ data/        Local SQLite database and automatic backups (ignored by Git)
 ```
 
 All money is stored as integer paise. Schedule interest is rounded to the nearest paisa per period; an exact half-paisa is rounded up. The last installment is adjusted so a fully repaid schedule closes at zero.
+
+## Loan sections
+
+- **Dashboard** explains the total property cost, loan funding, principal still owed, interest paid, and the next EMI. Property cost is split between agreement items and extra costs outside the agreement. The builder invoice total is optional and a mismatch is shown as a warning.
+- **Activity** records self contributions, loan disbursements, EMI and extra-EMI payments, and rate changes. Automatic historical EMI entries are marked `Auto`; editing one preserves it as a user-edited entry. Filters, totals, and pagination are applied by the API. Deleted entries can be restored from **Trash**.
+- **Analysis** contains the existing balance, principal/interest, cumulative interest, payment history, prepayment comparison, what-if simulator, and amortization schedule views.
+- **Loan details** edits the loan terms and the agreement/extra-cost item lists. Amounts are entered in rupees and stored as integer paise. GST is entered as a cost amount; no GST rate is assumed.
+
+The SQLite migrations preserve the existing payment, funding, and rate-change records while copying their financial history into the unified Activity model. Legacy source tables remain available for backward-compatible APIs and imports. Version-1 JSON imports remain accepted; newly exported files also contain property costs and unified Activity records.
 
 ## Data, backups, and restore
 

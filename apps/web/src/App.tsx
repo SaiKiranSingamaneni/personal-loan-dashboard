@@ -227,9 +227,15 @@ function AppShell() {
 
 function LoanPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loanId = location.pathname.split("/")[2];
-  const tab = searchParams.get("tab") ?? "overview";
+  const rawTab = searchParams.get("tab") ?? "dashboard";
+  const tab = rawTab === "overview" ? "dashboard" : rawTab === "schedule" ? "analysis" : rawTab;
+  useEffect(() => {
+    if (tab !== rawTab) setSearchParams({ tab }, { replace: true });
+    else if (!["dashboard", "activity", "analysis", "details"].includes(tab)) setSearchParams({ tab: "dashboard" }, { replace: true });
+  }, [rawTab, setSearchParams, tab]);
   const loanQuery = useQuery({
     queryKey: ["loans", loanId],
     queryFn: () => apiRequest<LoanListItem>(`/api/loans/${loanId}`),
@@ -238,7 +244,7 @@ function LoanPage() {
   const dashboardQuery = useQuery({
     queryKey: ["loans", loanId, "dashboard"],
     queryFn: () => apiRequest<Parameters<typeof BeginnerLoanDashboard>[0]["data"]>(`/api/loans/${loanId}/dashboard`),
-    enabled: loanId !== undefined && tab === "overview",
+    enabled: loanId !== undefined && tab === "dashboard",
   });
 
   if (loanQuery.isPending) {
@@ -258,28 +264,31 @@ function LoanPage() {
           <p>Track your balance, payments, and funding in one place.</p>
         </div>
         <div className="heading-actions">
-          <Link className="button button-secondary" to={`/loans/${loan.id}/edit${location.search}`}>Edit loan</Link>
+          <Link className="button button-secondary" to={`/loans/${loan.id}/edit?tab=details`}>Loan details</Link>
           <span className={`status-pill status-pill-${loan.status}`}>{loan.status}</span>
         </div>
       </div>
       <div className="tabs" role="tablist" aria-label="Loan sections">
         {[
-          ["overview", "Overview"],
+          ["dashboard", "Dashboard"],
           ["activity", "Activity"],
-          ["schedule", "Schedule"],
+          ["analysis", "Analysis"],
+          ["details", "Loan details"],
         ].map(([value, label]) => (
           <button
             key={value}
             role="tab"
             aria-selected={tab === value}
             className={`tab${tab === value ? " is-selected" : ""}`}
-            onClick={() => setSearchParams({ tab: value! })}
+            onClick={() => value === "details"
+              ? navigate(`/loans/${loan.id}/edit?tab=details`)
+              : setSearchParams({ tab: value! })}
           >
             {label}
           </button>
         ))}
       </div>
-      {tab === "overview" ? (
+      {tab === "dashboard" ? (
         dashboardQuery.isPending ? (
           <div className="panel-skeleton" aria-label="Loading loan summary" />
         ) : dashboardQuery.error ? (
@@ -287,28 +296,19 @@ function LoanPage() {
         ) : dashboardQuery.data ? (
           <>
             <BeginnerLoanDashboard data={dashboardQuery.data} />
-            <BalanceOverTimeChart loanId={loan.id} />
-            <PrincipalInterestChart loanId={loan.id} />
-            <CumulativeInterestChart loanId={loan.id} />
-            <PaymentHistoryChart loanId={loan.id} />
-            <PrepaymentImpact loanId={loan.id} />
-            <WhatIfSimulator loanId={loan.id} />
           </>
         ) : null
       ) : tab === "activity" ? (
         <ActivityTab loanId={loan.id} />
-      ) : tab === "schedule" ? (
+      ) : tab === "analysis" ? <div className="loan-analysis-panel" role="tabpanel">
+        <BalanceOverTimeChart loanId={loan.id} />
+        <PrincipalInterestChart loanId={loan.id} />
+        <CumulativeInterestChart loanId={loan.id} />
+        <PaymentHistoryChart loanId={loan.id} />
+        <PrepaymentImpact loanId={loan.id} />
+        <WhatIfSimulator loanId={loan.id} />
         <AmortizationTable loanId={loan.id} />
-      ) : <section className="placeholder-panel" role="tabpanel">
-        <div className="panel-kicker">{tab}</div>
-        <h2>{tab === "overview" ? "Your loan at a glance" : tab === "activity" ? "Recent loan activity" : "Repayment schedule"}</h2>
-        <p>The dashboard is connected to your local loan data. The next build step adds loan setup and live summary values here.</p>
-        <div className="placeholder-metrics">
-          <div><span>Loan status</span><strong>{loan.status}</strong></div>
-          <div><span>Lender</span><strong>{loan.lender}</strong></div>
-          <div><span>Loan type</span><strong>{loan.loanType}</strong></div>
-        </div>
-      </section>}
+      </div> : tab === "details" ? <LoanFormPage embedded /> : null}
     </>
   );
 }

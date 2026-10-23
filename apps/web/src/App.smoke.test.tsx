@@ -197,6 +197,15 @@ describe("main UI flow", () => {
     expect(await screen.findByText("Total property cost")).toBeTruthy();
     expect((await screen.findAllByText("Rs 43,391.16")).length).toBeGreaterThan(0);
     expect(window.location.pathname).toBe("/loans/loan-1");
+    expect(screen.getByRole("tab", { name: "Dashboard" }).getAttribute("aria-selected")).toBe("true");
+
+    await user.click(screen.getByRole("tab", { name: "Analysis" }));
+    expect(await screen.findByRole("heading", { name: "Amortization schedule" })).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "Loan details" }));
+    expect(await screen.findByRole("heading", { name: "Property cost" })).toBeTruthy();
+    expect(window.location.pathname).toBe("/loans/loan-1/edit");
+    await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+    expect(await screen.findByText("Total property cost")).toBeTruthy();
 
     await user.click(screen.getByRole("link", { name: "Add loan" }));
     await user.type(screen.getByLabelText(/loan name/i), "Personal loan");

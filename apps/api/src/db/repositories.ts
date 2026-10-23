@@ -7,11 +7,13 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type Database from "better-sqlite3";
 import {
+  activityEntries,
   contributions,
   disbursements,
   loans,
   notes,
   payments,
+  propertyCostComponents,
   rateChanges,
   schema,
 } from "./schema.js";
@@ -43,6 +45,11 @@ export interface LoanRepository
 }
 
 export interface LoanChildrenRepository {
+  activityEntries: LoanScopedRepository<
+    typeof activityEntries.$inferSelect,
+    typeof activityEntries.$inferInsert,
+    Partial<typeof activityEntries.$inferInsert>
+  >;
   disbursements: LoanScopedRepository<
     typeof disbursements.$inferSelect,
     typeof disbursements.$inferInsert,
@@ -68,6 +75,11 @@ export interface LoanChildrenRepository {
     typeof notes.$inferInsert,
     Partial<typeof notes.$inferInsert>
   >;
+  propertyCosts: {
+    listByLoan(loanId: string): (typeof propertyCostComponents.$inferSelect)[];
+    upsertMany(values: (typeof propertyCostComponents.$inferInsert)[]): void;
+    deleteByLoan(loanId: string): void;
+  };
 }
 
 export interface RepositorySet {
@@ -185,11 +197,44 @@ export function createSqliteRepositories(client: Database.Database): RepositoryS
           .all(),
     },
     children: {
+      activityEntries: createLoanScopedRepository(db, activityEntries),
       disbursements: createLoanScopedRepository(db, disbursements),
       contributions: createLoanScopedRepository(db, contributions),
       rateChanges: createLoanScopedRepository(db, rateChanges),
       payments: createLoanScopedRepository(db, payments),
       notes: createLoanScopedRepository(db, notes),
+      propertyCosts: {
+        listByLoan: (loanId) =>
+          db
+            .select()
+            .from(propertyCostComponents)
+            .where(eq(propertyCostComponents.loanId, loanId))
+            .all(),
+        upsertMany: (values) => {
+          for (const value of values) {
+            db.insert(propertyCostComponents)
+              .values(value)
+              .onConflictDoUpdate({
+                target: propertyCostComponents.id,
+                set: {
+                  loanId: value.loanId,
+                  name: value.name,
+                  group: value.group,
+                  kind: value.kind,
+                  amount: value.amount,
+                  note: value.note,
+                  updatedAt: value.updatedAt,
+                },
+              })
+              .run();
+          }
+        },
+        deleteByLoan: (loanId) => {
+          db.delete(propertyCostComponents)
+            .where(eq(propertyCostComponents.loanId, loanId))
+            .run();
+        },
+      },
     },
     transaction: (work) => client.transaction(work)(),
   };

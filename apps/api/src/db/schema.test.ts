@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { runMigrations } from "./connection.js";
 import { seedDemoData } from "./seed.js";
@@ -29,14 +33,74 @@ describe("initial SQLite schema and demo seed", () => {
       .all()
       .map((row) => (row as { name: string }).name);
     expect(tableNames).toEqual([
+      "activity_entries",
       "contributions",
       "disbursements",
       "loans",
       "notes",
       "payments",
+      "property_cost_components",
       "rate_changes",
       "schema_migrations",
     ]);
+  });
+
+  it("migrates existing financial records into activity without changing their values", () => {
+    db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    const priorMigrations = mkdtempSync(join(tmpdir(), "loan-dashboard-migrations-"));
+    try {
+      const source = fileURLToPath(new URL("./migrations/", import.meta.url));
+      for (const name of readdirSync(source).filter((entry) => entry < "0005_")) {
+        writeFileSync(join(priorMigrations, name), requireMigration(source, name));
+      }
+      runMigrations(db, priorMigrations);
+      db.prepare(`INSERT INTO loans (
+        id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
+        rate_type, tenure_months, start_date, emi_due_day
+      ) VALUES ('legacy-loan', 'Legacy loan', 'Bank', 'home', 10000000, 8,
+        'fixed', 120, '2026-01-01', 5)`).run();
+      db.prepare(`INSERT INTO payments (
+        id, loan_id, date, amount_paise, type, principal_part_paise,
+        interest_part_paise, status, scheduled_period, note
+      ) VALUES ('p1', 'legacy-loan', '2026-02-05', 12000, 'emi', 9000, 3000,
+        'paid', 1, 'February payment')`).run();
+      db.prepare(`INSERT INTO disbursements (id, loan_id, date, amount_paise, note)
+        VALUES ('d1', 'legacy-loan', '2026-01-03', 50000, 'First tranche')`).run();
+      db.prepare(`INSERT INTO contributions (id, loan_id, date, amount_paise, note)
+        VALUES ('c1', 'legacy-loan', '2026-01-02', 10000, 'Booking')`).run();
+      db.prepare(`INSERT INTO rate_changes (
+        id, loan_id, effective_date, annual_rate_percent, mode
+      ) VALUES ('r1', 'legacy-loan', '2026-03-01', 8.5, 'keep-emi')`).run();
+
+      runMigrations(db);
+
+      const entries = db.prepare(`SELECT id, type, date, amount_paise AS amount, title,
+        notes, status, interest_part_paise AS interestPart,
+        principal_part_paise AS principalPart, new_rate_percent AS newRate
+        FROM activity_entries WHERE loan_id = 'legacy-loan' ORDER BY id`).all();
+      expect(entries).toEqual([
+        expect.objectContaining({
+          id: "legacy-contribution:c1", type: "SELF_CONTRIBUTION", amount: 10000,
+          title: "Self contribution", notes: "Booking",
+        }),
+        expect.objectContaining({
+          id: "legacy-disbursement:d1", type: "LOAN_DISBURSEMENT", amount: 50000,
+          title: "Loan disbursement", notes: "First tranche",
+        }),
+        expect.objectContaining({
+          id: "legacy-payment:p1", type: "EMI", amount: 12000, status: "PAID",
+          interestPart: 3000, principalPart: 9000, notes: "February payment",
+        }),
+        expect.objectContaining({
+          id: "legacy-rate-change:r1", type: "RATE_CHANGE", amount: null,
+          newRate: 8.5, date: "2026-03-01",
+        }),
+      ]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM payments").get()).toEqual({ count: 1 });
+    } finally {
+      rmSync(priorMigrations, { recursive: true, force: true });
+    }
   });
 
   it("enforces loan type, positive tenure, and foreign-key constraints", () => {
@@ -54,3 +118,7 @@ describe("initial SQLite schema and demo seed", () => {
     ).toThrow();
   });
 });
+
+function requireMigration(directory: string, name: string): string {
+  return readFileSync(join(directory, name), "utf8");
+}

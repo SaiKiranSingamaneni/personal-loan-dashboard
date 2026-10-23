@@ -40,6 +40,66 @@ export const loans = sqliteTable("loans", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const propertyCostComponents = sqliteTable(
+  "property_cost_components",
+  {
+    id: text("id").primaryKey(),
+    loanId: text("loan_id")
+      .notNull()
+      .references(() => loans.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    group: text("cost_group", { enum: ["AGREEMENT", "OUTSIDE_AGREEMENT"] }).notNull(),
+    kind: text("kind").notNull(),
+    amount: integer("amount_paise").notNull(),
+    note: text("note"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("property_cost_components_loan_idx").on(table.loanId)],
+);
+
+export const activityEntries = sqliteTable(
+  "activity_entries",
+  {
+    id: text("id").primaryKey(),
+    loanId: text("loan_id")
+      .notNull()
+      .references(() => loans.id, { onDelete: "cascade" }),
+    type: text("type", {
+      enum: ["SELF_CONTRIBUTION", "LOAN_DISBURSEMENT", "EMI", "EXTRA_EMI", "RATE_CHANGE"],
+    }).notNull(),
+    date: text("date").notNull(),
+    amount: integer("amount_paise"),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    origin: text("origin", { enum: ["USER", "AUTO"] }).notNull(),
+    userEdited: integer("user_edited", { mode: "boolean" }).notNull().default(false),
+    deletedAt: text("deleted_at"),
+    source: text("source", { enum: ["BANK", "CASH", "OTHER"] }),
+    componentId: text("component_id").references(() => propertyCostComponents.id, {
+      onDelete: "set null",
+    }),
+    trancheLabel: text("tranche_label"),
+    bankReference: text("bank_reference"),
+    status: text("status", { enum: ["PAID", "MISSED", "SKIPPED"] }),
+    dueDate: text("due_date"),
+    mode: text("mode", { enum: ["REDUCE_TENURE", "REDUCE_EMI"] }),
+    newRatePercent: real("new_rate_percent"),
+    effectiveDate: text("effective_date"),
+    rateOption: text("rate_option", {
+      enum: ["KEEP_EMI_CHANGE_TENURE", "KEEP_TENURE_CHANGE_EMI"],
+    }),
+    interestPart: integer("interest_part_paise"),
+    principalPart: integer("principal_part_paise"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("activity_entries_loan_date_idx").on(table.loanId, table.date),
+    index("activity_entries_due_date_idx").on(table.loanId, table.dueDate),
+  ],
+);
+
 export const disbursements = sqliteTable(
   "disbursements",
   {
@@ -139,6 +199,8 @@ export const notes = sqliteTable(
 
 export const schema = {
   loans,
+  propertyCostComponents,
+  activityEntries,
   disbursements,
   contributions,
   rateChanges,

@@ -37,10 +37,35 @@ describe("SQLite repositories", () => {
     runMigrations(connection.client);
     expect(
       connection.client.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get(),
-    ).toEqual({ count: 4 });
+    ).toEqual({ count: 5 });
     createLoan();
     expect(repositories.loans.getById("loan-1")?.name).toBe("Test loan");
     expect(repositories.loans.listActive()).toHaveLength(1);
+    const timestamp = "2026-01-01T00:00:00.000Z";
+    repositories.children.propertyCosts.upsertMany([{
+      id: "cost-1",
+      loanId: "loan-1",
+      name: "Base price",
+      group: "AGREEMENT",
+      kind: "BASE_PRICE",
+      amount: 10_000,
+      note: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }]);
+    expect(repositories.children.propertyCosts.listByLoan("loan-1")[0]?.amount).toBe(10_000);
+    const activity = repositories.children.activityEntries.create({
+      id: "activity-1",
+      loanId: "loan-1",
+      type: "EXTRA_EMI",
+      date: "2026-02-05",
+      amount: 1000,
+      title: "Extra payment",
+      origin: "USER",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    expect(activity.title).toBe("Extra payment");
   });
 
   it("supports soft delete, restore, and loan-scoped child lookup", () => {

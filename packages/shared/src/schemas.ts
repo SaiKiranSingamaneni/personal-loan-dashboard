@@ -129,6 +129,60 @@ export const noteCreateSchema = z
   .strict();
 export const noteUpdateSchema = noteCreateSchema.partial().strict();
 
+const activityCommonFields = {
+  date: isoDateSchema,
+  title: z.string().trim().min(1).max(80),
+  notes: z.string().trim().max(1000).nullable().optional(),
+};
+
+export const activityEntryCreateSchema = z.discriminatedUnion("type", [
+  z.object({
+    ...activityCommonFields,
+    type: z.literal("SELF_CONTRIBUTION"),
+    amount: z.number().int().positive().safe(),
+    source: z.enum(["BANK", "CASH", "OTHER"]),
+    componentId: z.string().uuid().nullable().optional(),
+  }).strict(),
+  z.object({
+    ...activityCommonFields,
+    type: z.literal("LOAN_DISBURSEMENT"),
+    amount: z.number().int().positive().safe(),
+    trancheLabel: z.string().trim().max(80).nullable().optional(),
+    bankReference: z.string().trim().max(120).nullable().optional(),
+  }).strict(),
+  z.object({
+    ...activityCommonFields,
+    type: z.literal("EMI"),
+    amount: z.number().int().positive().safe(),
+    status: z.enum(["PAID", "MISSED", "SKIPPED"]),
+    dueDate: isoDateSchema,
+  }).strict(),
+  z.object({
+    ...activityCommonFields,
+    type: z.literal("EXTRA_EMI"),
+    amount: z.number().int().positive().safe(),
+    mode: z.enum(["REDUCE_TENURE", "REDUCE_EMI"]).optional(),
+  }).strict(),
+  z.object({
+    ...activityCommonFields,
+    type: z.literal("RATE_CHANGE"),
+    newRatePercent: z.number().finite().min(0).max(1000),
+    effectiveDate: isoDateSchema,
+    rateOption: z.enum(["KEEP_EMI_CHANGE_TENURE", "KEEP_TENURE_CHANGE_EMI"]),
+  }).strict(),
+]);
+
+export const propertyCostComponentSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(120),
+  group: z.enum(["AGREEMENT", "OUTSIDE_AGREEMENT"]),
+  kind: z.string().trim().min(1).max(80),
+  amount: z.number().int().nonnegative().safe(),
+  note: z.string().trim().max(1000).nullable().optional(),
+}).strict();
+
+export const propertyCostComponentsSchema = z.array(propertyCostComponentSchema).max(200);
+
 export const timelineQuerySchema = z
   .object({
     type: z.enum(["payment", "disbursement", "contribution", "rate-change", "note"]).optional(),
@@ -187,3 +241,5 @@ export type LoanCreateInput = z.infer<typeof loanCreateSchema>;
 export type LoanUpdateInput = z.infer<typeof loanUpdateSchema>;
 export type LoanEditInput = z.infer<typeof loanEditSchema>;
 export type SimulationScenarioInput = z.infer<typeof simulationScenarioSchema>;
+export type ActivityEntryCreateInput = z.infer<typeof activityEntryCreateSchema>;
+export type PropertyCostComponentInput = z.infer<typeof propertyCostComponentSchema>;

@@ -66,6 +66,30 @@ function makeSummary(loan: StoredLoan) {
   };
 }
 
+function makeDashboard(loan: StoredLoan) {
+  const cost = loan.propertyCost ?? 0;
+  return {
+    loan,
+    summary: {
+      sanctioned: loan.sanctionedAmount,
+      disbursed: loan.sanctionedAmount,
+      undisbursed: 0,
+      principalRepaid: 0,
+      outstandingPrincipal: loan.sanctionedAmount,
+      interestPaid: 0,
+      nextEmi: { date: "2026-11-05", amount: calculateEmi(asPaise(loan.sanctionedAmount), loan.annualRatePercent, loan.tenureMonths) },
+      totalOutlay: cost,
+      agreementValue: cost,
+      extraCosts: 0,
+      fundingSplit: { loanDisbursed: loan.sanctionedAmount, selfBank: 0, cash: 0, remainingToPay: Math.max(0, cost - loan.sanctionedAmount) },
+      warnings: [],
+    },
+    components: cost === 0 ? [] : [{ id: "base", name: "Base price", group: "AGREEMENT", amount: cost }],
+    recentActivity: [],
+    invoiceMismatch: null,
+  };
+}
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -133,6 +157,13 @@ describe("main UI flow", () => {
             ? jsonResponse({ error: { code: "LOAN_NOT_FOUND", message: "Missing loan" } }, 404)
             : jsonResponse({ loan, summary: makeSummary(loan) });
         }
+        const dashboardMatch = /^\/api\/loans\/([^/]+)\/dashboard$/.exec(url.pathname);
+        if (dashboardMatch?.[1] !== undefined) {
+          const loan = loans.find((item) => item.id === dashboardMatch[1]);
+          return loan === undefined
+            ? jsonResponse({ error: { code: "LOAN_NOT_FOUND", message: "Missing loan" } }, 404)
+            : jsonResponse(makeDashboard(loan));
+        }
         return jsonResponse([]);
       }),
     );
@@ -159,8 +190,8 @@ describe("main UI flow", () => {
     await user.type(screen.getByLabelText(/loan amount utilized/i), "5000000");
     await user.click(screen.getByRole("button", { name: "Save loan" }));
 
-    expect(await screen.findByText("Monthly EMI")).toBeTruthy();
-    expect((await screen.findAllByText("₹43,391.16")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Total property cost")).toBeTruthy();
+    expect((await screen.findAllByText("Rs 43,391.16")).length).toBeGreaterThan(0);
     expect(window.location.pathname).toBe("/loans/loan-1");
 
     await user.click(screen.getByRole("link", { name: "Add loan" }));

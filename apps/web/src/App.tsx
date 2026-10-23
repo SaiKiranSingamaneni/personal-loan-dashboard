@@ -12,7 +12,7 @@ import {
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
 import { LoanFormPage } from "./LoanForm.js";
-import { LoanSummaryDashboard, type LoanSummaryData } from "./LoanSummaryDashboard.js";
+import { BeginnerLoanDashboard } from "./BeginnerLoanDashboard.js";
 import { LoanEntries } from "./LoanEntries.js";
 import { LoanTimeline } from "./LoanTimeline.js";
 import { BalanceOverTimeChart } from "./BalanceOverTimeChart.js";
@@ -236,9 +236,9 @@ function LoanPage() {
     queryFn: () => apiRequest<LoanListItem>(`/api/loans/${loanId}`),
     enabled: loanId !== undefined,
   });
-  const summaryQuery = useQuery({
-    queryKey: ["loans", loanId, "summary"],
-    queryFn: () => apiRequest<{ summary: LoanSummaryData }>(`/api/loans/${loanId}/summary`),
+  const dashboardQuery = useQuery({
+    queryKey: ["loans", loanId, "dashboard"],
+    queryFn: () => apiRequest<Parameters<typeof BeginnerLoanDashboard>[0]["data"]>(`/api/loans/${loanId}/dashboard`),
     enabled: loanId !== undefined && tab === "overview",
   });
 
@@ -281,13 +281,13 @@ function LoanPage() {
         ))}
       </div>
       {tab === "overview" ? (
-        summaryQuery.isPending ? (
+        dashboardQuery.isPending ? (
           <div className="panel-skeleton" aria-label="Loading loan summary" />
-        ) : summaryQuery.error ? (
-          <ApiError error={summaryQuery.error} />
-        ) : summaryQuery.data ? (
+        ) : dashboardQuery.error ? (
+          <ApiError error={dashboardQuery.error} />
+        ) : dashboardQuery.data ? (
           <>
-            <LoanSummaryDashboard summary={summaryQuery.data.summary} />
+            <BeginnerLoanDashboard data={dashboardQuery.data} />
             <BalanceOverTimeChart loanId={loan.id} />
             <PrincipalInterestChart loanId={loan.id} />
             <CumulativeInterestChart loanId={loan.id} />

@@ -262,6 +262,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       loan: dashboard.loan,
       summary: dashboard.summary,
       invoiceMismatch: dashboard.invoiceMismatch,
+      components: repositories.children.propertyCosts.listByLoan(loanId),
       recentActivity: dashboard.entries.filter((item) => item.deletedAt == null)
         .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
     });

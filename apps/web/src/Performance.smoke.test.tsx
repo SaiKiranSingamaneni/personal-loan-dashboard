@@ -128,12 +128,37 @@ describe("large dashboard render performance", () => {
         projectedClosureDate: schedule.at(-1)!.dueDate,
         warnings: [],
       };
-      return [loan.id, { loan, schedule, payments, summary }] as const;
+      const dashboard = {
+        loan,
+        summary: {
+          sanctioned: loan.sanctionedAmount,
+          disbursed: loan.sanctionedAmount,
+          undisbursed: 0,
+          principalRepaid: 60_000_000,
+          outstandingPrincipal: 40_000_000,
+          interestPaid: 0,
+          nextEmi: { date: schedule[0]!.dueDate, amount: schedule[0]!.emi },
+          totalOutlay: loan.propertyCost,
+          agreementValue: loan.propertyCost,
+          extraCosts: 0,
+          fundingSplit: { loanDisbursed: loan.sanctionedAmount, selfBank: 0, cash: 0, remainingToPay: 20_000_000 },
+          warnings: [],
+        },
+        components: [{ id: `${loan.id}-cost`, name: "Property", group: "AGREEMENT", amount: loan.propertyCost }],
+        recentActivity: [],
+        invoiceMismatch: null,
+      };
+      return [loan.id, { loan, schedule, payments, summary, dashboard }] as const;
     }));
 
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const path = new URL(String(input), window.location.origin).pathname;
       if (path === "/api/loans") return response(loans);
+      const dashboardMatch = /^\/api\/loans\/([^/]+)\/dashboard$/.exec(path);
+      if (dashboardMatch?.[1] !== undefined) {
+        const data = dataById.get(dashboardMatch[1]);
+        return data === undefined ? response({ error: { code: "NOT_FOUND", message: "Missing loan" } }) : response(data.dashboard);
+      }
       const match = /^\/api\/loans\/([^/]+)(?:\/(summary|schedule|payments|disbursements))?$/.exec(path);
       if (match?.[1] === undefined) return response([]);
       const data = dataById.get(match[1]);
@@ -150,7 +175,7 @@ describe("large dashboard render performance", () => {
 
     const startedAt = performance.now();
     render(<TestApplication />);
-    await screen.findByText("Monthly EMI");
+    await screen.findByText("Total property cost");
     await screen.findByRole("img", { name: "Line chart comparing projected outstanding balance and actual outstanding balance" });
     await screen.findByRole("img", { name: "monthly stacked principal and interest chart" });
     await screen.findByRole("img", { name: "Area chart of cumulative interest paid" });

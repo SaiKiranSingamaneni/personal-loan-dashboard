@@ -7,7 +7,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - [x] P0-T3 Save this spec as `docs/SPEC.md`, create `docs/BUILD_STATE.md` from the template, README skeleton, `.gitignore` (including `data/`, `node_modules`, `.env`).
 - [x] P1-T1 Money helpers (integer paise, rounding rule), date helpers (ISO dates, add months with day clamping), Indian number formatting.
 - [x] P1-T2 EMI formula and base amortization schedule, with known-answer tests.
-- [ ] P1-T3 Apply recorded payments to the schedule: actual vs scheduled, outstanding balance as of any date.
+- [x] P1-T3 Apply recorded payments to the schedule: actual vs scheduled, outstanding balance as of any date.
 - [ ] P1-T4 Prepayments in both modes (reduce tenure, reduce EMI).
 - [ ] P1-T5 Floating rate changes in both modes.
 - [ ] P1-T6 Staged disbursement and pre-EMI interest.
@@ -66,3 +66,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P0-T3 - Saved the complete spec and build tracker, added the README skeleton and data ignore rule; P0 gate checks pass - P1-T1 is next.
 - 2026-10-23 - P1-T1 - Added exact rupee-to-paise parsing, nearest-paisa rounding, Indian formatting and ISO date helpers with month clamping - P1-T2 EMI schedule remains.
 - 2026-10-23 - P1-T2 - Added EMI calculation and rounded reducing-balance schedule with a known-answer case and exact-zero closing balance - P1-T3 payment overlays remain.
+- 2026-10-23 - P1-T3 - Added scheduled-versus-actual payment reconciliation and balance snapshots for any date - P1-T4 prepayment handling remains.

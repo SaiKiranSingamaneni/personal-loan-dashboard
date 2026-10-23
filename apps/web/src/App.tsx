@@ -13,6 +13,7 @@ import { apiRequest, ApiClientError } from "./api.js";
 import { LoanFormPage } from "./LoanForm.js";
 import { LoanSummaryDashboard, type LoanSummaryData } from "./LoanSummaryDashboard.js";
 import { LoanEntries } from "./LoanEntries.js";
+import { LoanTimeline } from "./LoanTimeline.js";
 
 interface LoanListItem {
   id: string;
@@ -246,7 +247,10 @@ function LoanPage() {
           <LoanSummaryDashboard summary={summaryQuery.data.summary} />
         ) : null
       ) : tab === "activity" ? (
-        <LoanEntries loanId={loan.id} />
+        <>
+          <LoanTimeline loanId={loan.id} />
+          <LoanEntries loanId={loan.id} />
+        </>
       ) : <section className="placeholder-panel" role="tabpanel">
         <div className="panel-kicker">{tab}</div>
         <h2>{tab === "overview" ? "Your loan at a glance" : tab === "activity" ? "Recent loan activity" : "Repayment schedule"}</h2>

@@ -95,6 +95,31 @@ h1, h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; letter-spacin
 .placeholder-panel h2 { margin: 8px 0; font-size: 20px; }
 .placeholder-panel > p { max-width: 540px; margin-bottom: 24px; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .entries-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 18px; margin-top: 24px; align-items: start; }
+.timeline-card { margin-top: 24px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.timeline-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px 0 18px; border-bottom: 1px solid var(--line); }
+.timeline-filters .form-field { font-size: 11px; }
+.timeline-filters input, .timeline-filters select { width: 100%; min-height: 37px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 500 11px ui-sans-serif, system-ui, sans-serif; }
+.timeline-sections { display: grid; gap: 20px; padding-top: 16px; }
+.timeline-group-heading { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; padding: 0 0 10px; }
+.timeline-group-heading h3 { margin: 0; color: var(--text); font-size: 13px; }
+.timeline-group-heading > span { color: var(--muted); font-size: 10px; }
+.timeline-list { position: relative; display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.timeline-item { position: relative; display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.timeline-item.is-upcoming { border-color: color-mix(in srgb, #4d71dc 30%, var(--line)); background: color-mix(in srgb, #4d71dc 4%, var(--surface)); }
+.timeline-item.is-overdue { border-color: color-mix(in srgb, #c95850 42%, var(--line)); background: color-mix(in srgb, #c95850 5%, var(--surface)); }
+.timeline-marker { width: 8px; height: 8px; border-radius: 50%; background: #4d71dc; }
+.timeline-marker-disbursement { background: #42a27f; }
+.timeline-marker-contribution { background: #c18a37; }
+.timeline-marker-rate-change { background: #8755bc; }
+.timeline-marker-note { background: #718098; }
+.timeline-item-copy { display: grid; gap: 3px; min-width: 0; }
+.timeline-item-copy strong { overflow-wrap: anywhere; color: var(--text); font-size: 12px; }
+.timeline-item-end { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
+.timeline-state { padding: 4px 7px; border-radius: 999px; font-size: 9px; font-weight: 700; }
+.state-upcoming { background: #e9efff; color: #3559c7; }
+.state-overdue { background: #fde9e6; color: #a13b34; }
+html[data-theme="dark"] .state-upcoming { background: #263454; color: #a9bdff; }
+html[data-theme="dark"] .state-overdue { background: #492b2a; color: #f38b81; }
 .entry-form-card, .entry-list-card { min-width: 0; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
 .entry-form-card .chart-heading, .entry-list-card .chart-heading { margin-bottom: 18px; }
 .entry-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
@@ -114,6 +139,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; letter-spacin
 .button-danger { border: 1px solid color-mix(in srgb, #bc5147 38%, var(--line)); background: color-mix(in srgb, #bc5147 8%, var(--surface)); color: #a13b34; }
 html[data-theme="dark"] .button-danger { color: #f38b81; }
 @media (max-width: 900px) { .entries-layout { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .timeline-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .timeline-item { grid-template-columns: 8px minmax(0, 1fr); } .timeline-item-end { grid-column: 2; justify-content: flex-start; } }
 .placeholder-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 .placeholder-metrics div { display: grid; gap: 8px; padding: 20px 14px 0 0; }
 .placeholder-metrics span { color: var(--muted); font-size: 10px; }

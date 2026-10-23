@@ -1,5 +1,5 @@
 # Build state
-Current task: P4-T2 - Last updated: 2026-10-23
+Current task: P4-T3 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -24,7 +24,7 @@ Current task: P4-T2 - Last updated: 2026-10-23
 - [x] P3-T2 Loan create/edit form with validation, derived read-only values and warnings.
 - [x] P3-T3 Summary cards, funding split donut, repayment progress bars.
 - [x] P4-T1 Forms for payments, disbursements, own contributions, rate changes and notes (add, edit, delete).
-- [ ] P4-T2 Timeline view: chronological merge, filters, search, month grouping, Upcoming and overdue states.
+- [x] P4-T2 Timeline view: chronological merge, filters, search, month grouping, Upcoming and overdue states.
 - [ ] P4-T3 Scheduled EMI generation and the mark-as-paid flow.
 - [ ] P5-T1 Balance over time (projected vs actual).
 - [ ] P5-T2 Principal vs interest per period (monthly/yearly toggle).
@@ -62,6 +62,7 @@ Current task: P4-T2 - Last updated: 2026-10-23
 - 2026-10-23 - Store full exports as version 1 JSON and require an explicit `overwrite` mode after preview - prevents accidental replacement and supports future format migrations.
 - 2026-10-23 - Use a jsdom React Testing Library flow to exercise loan creation and URL-preserving tab/loan switching - verifies the P3 user-visible gate without requiring a browser install.
 - 2026-10-23 - Use a shared Activity entry manager with conditional forms and API-backed CRUD for each entry type - keeps the timeline source records directly editable and validates input through shared Zod schemas.
+- 2026-10-23 - Keep the timeline query parameters in server requests and group its results in the UI by month with a distinct Upcoming section - lets the server own filtering/order while preserving visible month totals and due states.
 
 ## Blockers
 - none
@@ -92,3 +93,4 @@ Current task: P4-T2 - Last updated: 2026-10-23
 - 2026-10-23 - P3-T3 - Added six loan summary cards, Recharts funding donut, and repayment/disbursement progress bars with warnings; verification passes and web build succeeds - P4-T1 entry forms remain.
 - 2026-10-23 - P3 gate - Added a jsdom UI flow covering two loan creations, the known ₹43,391.16 EMI, summary cards, URL/tab preservation, and client-side loan switching; `npm run verify` passes (55 tests) and `npm run build` succeeds - P4-T1 is next.
 - 2026-10-23 - P4-T1 - Added validated Activity forms for payments, disbursements, contributions, rate changes, and linked/standalone notes, with edit and soft-delete actions; 57 tests pass and production build succeeds - P4-T2 timeline filters and grouping remain.
+- 2026-10-23 - P4-T2 - Added merged timeline filters, newest/oldest ordering, monthly paid subtotals, a future Upcoming group, and explicit overdue styling; 58 tests pass and production build succeeds - P4-T3 scheduled EMI generation and mark-as-paid remain.

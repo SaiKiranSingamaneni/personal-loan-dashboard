@@ -13,8 +13,7 @@ const isoDateSchema = z
     }
   }, "Date must be a valid YYYY-MM-DD calendar date");
 
-export const loanCreateSchema = z
-  .object({
+const loanFieldsSchema = z.object({
     name: z.string().trim().min(1).max(120),
     lender: z.string().trim().min(1).max(120),
     loanType: z.enum(["home", "plot", "vehicle", "personal", "other"]),
@@ -32,10 +31,27 @@ export const loanCreateSchema = z
     propertyCost: z.number().int().nonnegative().safe().nullable().optional(),
     emiStartRule: z.enum(["full-disbursement", "date"]).default("full-disbursement"),
     emiStartDate: isoDateSchema.nullable().optional(),
-  })
-  .strict();
+}).strict();
 
-export const loanUpdateSchema = loanCreateSchema.partial().strict();
+function validateEmiStartRule(
+  loan: { emiStartRule?: "full-disbursement" | "date"; emiStartDate?: string | null },
+  context: z.RefinementCtx,
+): void {
+    if (loan.emiStartRule === "date" && loan.emiStartDate == null) {
+      context.addIssue({
+        code: "custom",
+        path: ["emiStartDate"],
+        message: "An EMI start date is required when using the date rule.",
+      });
+    }
+}
+
+export const loanCreateSchema = loanFieldsSchema.superRefine(validateEmiStartRule);
+
+export const loanUpdateSchema = loanFieldsSchema
+  .partial()
+  .strict()
+  .superRefine(validateEmiStartRule);
 
 export const isoDateInputSchema = isoDateSchema;
 

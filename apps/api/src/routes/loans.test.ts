@@ -1,0 +1,85 @@
+import request from "supertest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createApp } from "../app.js";
+import { openSqliteDatabase, type SqliteConnection } from "../db/connection.js";
+import { createSqliteRepositories } from "../db/repositories.js";
+
+describe("loan REST endpoints", () => {
+  let connection: SqliteConnection;
+  let app: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    connection = openSqliteDatabase(":memory:");
+    app = createApp(createSqliteRepositories(connection.client));
+  });
+
+  afterEach(() => connection.close());
+
+  const validLoan = {
+    name: "Home loan",
+    lender: "Example Bank",
+    loanType: "home",
+    sanctionedAmount: 10_000_000,
+    annualRatePercent: 8.5,
+    rateType: "floating",
+    tenureMonths: 24,
+    startDate: "2026-10-01",
+    emiDueDay: 5,
+    propertyCost: 15_000_000,
+  };
+
+  it("creates, reads, updates, lists, and soft deletes a loan", async () => {
+    const created = await request(app).post("/api/loans").send(validLoan);
+    expect(created.status).toBe(201);
+    expect(created.body.name).toBe("Home loan");
+    expect(created.body.id).toEqual(expect.any(String));
+    const id = created.body.id as string;
+
+    expect((await request(app).get("/api/loans")).body).toHaveLength(1);
+    expect((await request(app).get(`/api/loans/${id}`)).body.lender).toBe("Example Bank");
+    const updated = await request(app).put(`/api/loans/${id}`).send({ name: "Updated loan" });
+    expect(updated.status).toBe(200);
+    expect(updated.body.name).toBe("Updated loan");
+
+    expect((await request(app).delete(`/api/loans/${id}`)).status).toBe(204);
+    expect((await request(app).get("/api/loans")).body).toHaveLength(0);
+    expect((await request(app).get(`/api/loans/${id}`)).status).toBe(404);
+  });
+
+  it("returns field validation failures and rejects a missing loan", async () => {
+    const invalid = await request(app)
+      .post("/api/loans")
+      .send({ ...validLoan, name: "", startDate: "2026-02-30" });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    expect(invalid.body.error.fields.name).toBeDefined();
+    expect(invalid.body.error.fields.startDate).toBeDefined();
+    expect((await request(app).get("/api/loans/missing")).body.error.code).toBe(
+      "LOAN_NOT_FOUND",
+    );
+  });
+
+  it("returns a full amortization schedule and derived summary", async () => {
+    const created = await request(app).post("/api/loans").send(validLoan);
+    const id = created.body.id as string;
+    const repos = createSqliteRepositories(connection.client);
+    const timestamp = new Date().toISOString();
+    repos.children.disbursements.create({
+      id: "disbursement-1",
+      loanId: id,
+      date: "2026-10-01",
+      amount: 8_000_000,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    const schedule = await request(app).get(`/api/loans/${id}/schedule`);
+    expect(schedule.status).toBe(200);
+    expect(schedule.body).toHaveLength(24);
+    expect(schedule.body.at(-1).closingBalance).toBe(0);
+    const summary = await request(app).get(`/api/loans/${id}/summary`);
+    expect(summary.status).toBe(200);
+    expect(summary.body.summary.outstandingPrincipal).toBe(8_000_000);
+    expect(summary.body.summary.emi).toBe(schedule.body[0].emi);
+    expect(summary.body.summary.sanctionedNotDisbursed).toBe(2_000_000);
+  });
+});

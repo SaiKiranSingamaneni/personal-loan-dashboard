@@ -4,3 +4,4 @@ export { createSqliteRepositories } from "./db/repositories.js";
 export { HttpError } from "./http/errors.js";
 export { parseInput } from "./http/validation.js";
 export { validateBody } from "./http/validation.js";
+export { createLoansRouter } from "./routes/loans.js";

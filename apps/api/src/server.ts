@@ -5,8 +5,7 @@ import { createSqliteRepositories } from "./db/repositories.js";
 export function startServer(): void {
   const connection = openSqliteDatabase();
   const repositories = createSqliteRepositories(connection.client);
-  const app = createApp();
-  app.locals.repositories = repositories;
+  const app = createApp(repositories);
   const port = Number(process.env.PORT ?? 3001);
   const server = app.listen(port, "127.0.0.1", () => {
     process.stdout.write(`API listening on http://127.0.0.1:${port}\n`);

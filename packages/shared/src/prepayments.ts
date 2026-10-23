@@ -1,7 +1,11 @@
-import { addMonths, compareIsoDates, type IsoDate } from "./dates.js";
+import { compareIsoDates, type IsoDate } from "./dates.js";
 import type { AmortizationPeriod } from "./amortization.js";
-import { calculateEmi, createAmortizationSchedule } from "./amortization.js";
-import { asPaise, roundToPaise, type Paise } from "./money.js";
+import {
+  calculateEmi,
+  createAmortizationSchedule,
+  createScheduleWithFixedEmi,
+} from "./amortization.js";
+import { asPaise, type Paise } from "./money.js";
 
 export type PrepaymentMode = "reduce-tenure" | "reduce-emi";
 
@@ -10,46 +14,6 @@ export interface PrepaymentResult {
   appliedAmount: Paise;
   interestSaved: Paise;
   periodsSaved: number;
-}
-
-function scheduleWithFixedEmi(
-  principal: Paise,
-  annualRatePercent: number,
-  emi: Paise,
-  maxMonths: number,
-  firstDueDate: IsoDate,
-): AmortizationPeriod[] {
-  const monthlyRate = annualRatePercent / 1200;
-  const rows: AmortizationPeriod[] = [];
-  let openingBalance = principal;
-
-  for (let index = 0; index < maxMonths && openingBalance > 0; index += 1) {
-    const interest = roundToPaise(openingBalance * monthlyRate);
-    if (emi <= interest) {
-      throw new Error("EMI must exceed monthly interest to reduce the balance");
-    }
-    const finalPayment = emi >= openingBalance + interest;
-    const actualEmi = finalPayment ? asPaise(openingBalance + interest) : emi;
-    const principalPart = asPaise(actualEmi - interest);
-    const closingBalance = finalPayment
-      ? asPaise(0)
-      : asPaise(openingBalance - principalPart);
-    rows.push({
-      period: index + 1,
-      dueDate: addMonths(firstDueDate, index),
-      openingBalance,
-      emi: actualEmi,
-      principal: principalPart,
-      interest,
-      closingBalance,
-    });
-    openingBalance = closingBalance;
-  }
-
-  if (openingBalance > 0) {
-    throw new Error("Prepayment schedule did not close within the original remaining term");
-  }
-  return rows;
 }
 
 /** Apply a prepayment and recalculate the remaining schedule in the chosen mode. */
@@ -96,11 +60,11 @@ export function applyPrepayment(
   const firstDueDate = remaining[0]!.dueDate;
   const recomputed =
     mode === "reduce-tenure"
-      ? scheduleWithFixedEmi(
+      ? createScheduleWithFixedEmi(
           reducedBalance,
           annualRatePercent,
           remaining[0]!.emi,
-          remaining.length,
+          1200,
           firstDueDate,
         )
       : createAmortizationSchedule({

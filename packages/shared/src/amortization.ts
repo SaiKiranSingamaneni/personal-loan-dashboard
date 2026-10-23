@@ -92,3 +92,49 @@ export function createAmortizationSchedule(
   }
   return schedule;
 }
+
+/** Rebuild a schedule with a fixed EMI, allowing the term to change. */
+export function createScheduleWithFixedEmi(
+  principal: Paise,
+  annualRatePercent: number,
+  emi: Paise,
+  maxMonths: number,
+  firstDueDate: IsoDate,
+): AmortizationPeriod[] {
+  if (principal <= 0 || emi <= 0 || !Number.isInteger(maxMonths) || maxMonths < 1) {
+    throw new Error("Principal, EMI, and maximum term must be positive");
+  }
+  if (!Number.isFinite(annualRatePercent) || annualRatePercent < 0) {
+    throw new Error("Annual interest rate must be a finite non-negative number");
+  }
+  const monthlyRate = annualRatePercent / 1200;
+  const schedule: AmortizationPeriod[] = [];
+  let openingBalance = principal;
+
+  for (let index = 0; index < maxMonths && openingBalance > 0; index += 1) {
+    const interest = roundToPaise(openingBalance * monthlyRate);
+    if (emi <= interest) {
+      throw new Error("EMI must exceed monthly interest to reduce the balance");
+    }
+    const isFinal = emi >= openingBalance + interest;
+    const periodEmi = isFinal ? asPaise(openingBalance + interest) : emi;
+    const principalPaid = asPaise(periodEmi - interest);
+    const closingBalance = isFinal
+      ? asPaise(0)
+      : asPaise(openingBalance - principalPaid);
+    schedule.push({
+      period: index + 1,
+      dueDate: addMonths(firstDueDate, index),
+      openingBalance,
+      emi: periodEmi,
+      principal: principalPaid,
+      interest,
+      closingBalance,
+    });
+    openingBalance = closingBalance;
+  }
+  if (openingBalance > 0) {
+    throw new Error("Schedule did not close within the maximum term");
+  }
+  return schedule;
+}

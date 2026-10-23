@@ -9,7 +9,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - [x] P1-T2 EMI formula and base amortization schedule, with known-answer tests.
 - [x] P1-T3 Apply recorded payments to the schedule: actual vs scheduled, outstanding balance as of any date.
 - [x] P1-T4 Prepayments in both modes (reduce tenure, reduce EMI).
-- [ ] P1-T5 Floating rate changes in both modes.
+- [x] P1-T5 Floating rate changes in both modes.
 - [ ] P1-T6 Staged disbursement and pre-EMI interest.
 - [ ] P1-T7 Summary metrics from section 4.1 and the funding reconciliation checks with warnings.
 - [ ] P1-T8 Pure what-if `simulate()` function.
@@ -68,3 +68,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P1-T2 - Added EMI calculation and rounded reducing-balance schedule with a known-answer case and exact-zero closing balance - P1-T3 payment overlays remain.
 - 2026-10-23 - P1-T3 - Added scheduled-versus-actual payment reconciliation and balance snapshots for any date - P1-T4 prepayment handling remains.
 - 2026-10-23 - P1-T4 - Added prepayment schedule recalculation for reduce-tenure and reduce-EMI options - P1-T5 floating rate changes remain.
+- 2026-10-23 - P1-T5 - Added floating rate reset recalculation for keep-EMI and keep-tenure modes - P1-T6 staged disbursement remains.

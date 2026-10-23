@@ -1,5 +1,5 @@
 # Build state
-Current task: P5-T2 - Last updated: 2026-10-23
+Current task: P5-T3 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -27,7 +27,7 @@ Current task: P5-T2 - Last updated: 2026-10-23
 - [x] P4-T2 Timeline view: chronological merge, filters, search, month grouping, Upcoming and overdue states.
 - [x] P4-T3 Scheduled EMI generation and the mark-as-paid flow.
 - [x] P5-T1 Balance over time (projected vs actual).
-- [ ] P5-T2 Principal vs interest per period (monthly/yearly toggle).
+- [x] P5-T2 Principal vs interest per period (monthly/yearly toggle).
 - [ ] P5-T3 Cumulative interest area chart.
 - [ ] P5-T4 Payment history chart with missed payments highlighted.
 - [ ] P5-T5 Amortization table with paid markers, sorting and CSV export.
@@ -65,6 +65,7 @@ Current task: P5-T2 - Last updated: 2026-10-23
 - 2026-10-23 - Keep the timeline query parameters in server requests and group its results in the UI by month with a distinct Upcoming section - lets the server own filtering/order while preserving visible month totals and due states.
 - 2026-10-23 - Generate scheduled EMI rows through an idempotent API operation and refresh only unpaid scheduled rows - avoids duplicate installments and preserves actual paid records when the schedule is revisited.
 - 2026-10-23 - Calculate actual balance from dated disbursements less principal parts of paid payments and stop the actual series at today - keeps the projection from being mistaken for recorded future activity.
+- 2026-10-23 - Aggregate projected principal and interest into calendar month or year buckets for the stacked chart - makes period comparisons match due dates and leaves the schedule as the single source of totals.
 
 ## Blockers
 - none
@@ -99,3 +100,4 @@ Current task: P5-T2 - Last updated: 2026-10-23
 - 2026-10-23 - P4-T3 - Added transactional scheduled EMI generation from the current schedule, refresh of unpaid installments, and editable mark-as-paid flow; 60 tests pass and production build succeeds - P4 chronology/upcoming/overdue gate passes; P5-T1 charts remain.
 - 2026-10-23 - P4 gate - Verified API chronological ordering and UI separation of future and overdue items; full verification passes (60 tests) and production build succeeds - P5-T1 is next.
 - 2026-10-23 - P5-T1 - Added a projected versus actual outstanding balance line chart, including staged funding and actual paid principal; 62 tests pass and production build succeeds - P5-T2 principal-versus-interest periods remain.
+- 2026-10-23 - P5-T2 - Added stacked principal/interest bars with monthly/yearly aggregation and a period toggle; 64 tests pass and production build succeeds - P5-T3 cumulative interest chart remains.

@@ -98,6 +98,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Session log
+- 2026-10-24 - Startup migration fix - Restrict legacy AUTO EMI promotion to scheduled-period records and skip dates already owned by an AUTO row; same-date collision regression test and full `npm run verify` pass (100 tests).
 - 2026-10-23 - R-T8 follow-up - Removed legacy aggregate funding edits from existing-loan details so Activity remains the funding source of truth; final `npm run verify` passes (100 tests) and the web build succeeds.
 - 2026-10-23 - Rewrite phase gate - `npm run verify` passes on the committed R-T1 through R-T8 tree (100 tests); created the `rewrite-complete` tag.
 - 2026-10-23 - R-T8 - Reorganized loans into Dashboard, Activity, Analysis, and Loan details; moved charts/amortization to Analysis, removed old Activity/Timeline UI, preserved legacy tab URLs, and updated README; `npm run verify` passes (100 tests) and the web build succeeds - final verify and `rewrite-complete` tag remain.

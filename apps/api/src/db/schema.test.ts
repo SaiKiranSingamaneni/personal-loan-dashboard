@@ -65,6 +65,11 @@ describe("initial SQLite schema and demo seed", () => {
         interest_part_paise, status, scheduled_period, note
       ) VALUES ('p1', 'legacy-loan', '2026-02-05', 12000, 'emi', 9000, 3000,
         'paid', 1, 'February payment')`).run();
+      db.prepare(`INSERT INTO payments (
+        id, loan_id, date, amount_paise, type, principal_part_paise,
+        interest_part_paise, status, scheduled_period, note
+      ) VALUES ('p2', 'legacy-loan', '2026-02-05', 12000, 'emi', 9000, 3000,
+        'scheduled', 2, 'Duplicate due date')`).run();
       db.prepare(`INSERT INTO disbursements (id, loan_id, date, amount_paise, note)
         VALUES ('d1', 'legacy-loan', '2026-01-03', 50000, 'First tranche')`).run();
       db.prepare(`INSERT INTO contributions (id, loan_id, date, amount_paise, note)
@@ -93,13 +98,19 @@ describe("initial SQLite schema and demo seed", () => {
           interestPart: 3000, principalPart: 9000, notes: "February payment",
         }),
         expect.objectContaining({
+          id: "legacy-payment:p2", type: "EMI", amount: 12000, status: "SKIPPED",
+          interestPart: 3000, principalPart: 9000, notes: "Duplicate due date",
+        }),
+        expect.objectContaining({
           id: "legacy-rate-change:r1", type: "RATE_CHANGE", amount: null,
           newRate: 8.5, date: "2026-03-01",
         }),
       ]);
       expect(db.prepare("SELECT origin, user_edited AS userEdited FROM activity_entries WHERE id = 'legacy-payment:p1'").get())
+        .toEqual({ origin: "USER", userEdited: 1 });
+      expect(db.prepare("SELECT origin, user_edited AS userEdited FROM activity_entries WHERE id = 'legacy-payment:p2'").get())
         .toEqual({ origin: "AUTO", userEdited: 0 });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM payments").get()).toEqual({ count: 1 });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM payments").get()).toEqual({ count: 2 });
     } finally {
       rmSync(priorMigrations, { recursive: true, force: true });
     }

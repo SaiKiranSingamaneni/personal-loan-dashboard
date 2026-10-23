@@ -140,6 +140,13 @@ describe("main UI flow", () => {
     window.addEventListener("beforeunload", beforeUnload);
     render(<TestApplication />);
 
+    await user.click(await screen.findByRole("button", { name: "Switch to dark theme" }));
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(window.localStorage.getItem("loan-theme")).toBe("dark");
+    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(window.localStorage.getItem("loan-theme")).toBe("light");
+
     await user.click(await screen.findByRole("link", { name: /add your first loan/i }));
     await user.type(screen.getByLabelText(/loan name/i), "Apartment loan");
     await user.type(screen.getByLabelText(/^lender/i), "Example Bank");

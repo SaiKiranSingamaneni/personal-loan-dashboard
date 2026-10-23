@@ -171,7 +171,7 @@ function AppShell() {
                   <span className="loan-link-name">{loan.name}</span>
                   <span className="loan-link-meta">{displayMoney(balance)}</span>
                 </span>
-                <span className={`status-dot status-${loan.status}`} title={loan.status} />
+                <span className={`loan-status-badge loan-status-${loan.status}`}>{loan.status}</span>
               </NavLink>
             );
           })}

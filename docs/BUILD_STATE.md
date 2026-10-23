@@ -1,5 +1,5 @@
 # Build state
-Current task: P7-T3 - Last updated: 2026-10-23
+Current task: P7-T4 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -37,7 +37,7 @@ Current task: P7-T3 - Last updated: 2026-10-23
 - [x] P6-T3 In-app due reminders (7-day banner, overdue count in the sidebar).
 - [x] P7-T1 Export/import UI with validation preview, per-loan CSV export.
 - [x] P7-T2 Trash view with restore and permanent delete.
-- [ ] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
+- [x] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
 - [ ] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
 - [ ] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
 - [ ] P8-T2 Optional Playwright smoke test of the main flow.
@@ -121,3 +121,4 @@ Current task: P7-T3 - Last updated: 2026-10-23
 - 2026-10-23 - P6 gate - Verified overview totals against individual loan summaries and completed planning tools and due reminders; full verification passes (77 tests) and production build succeeds - P7-T1 is next.
 - 2026-10-23 - P7-T1 - Added Data and backups page for JSON export, shared-schema validation preview, confirmed overwrite, manual backup, and payment CSV export; amortization CSV is available in Schedule; 79 tests pass and production build succeeds - P7-T2 Trash view remains.
 - 2026-10-23 - P7-T2 - Added a Trash page listing deleted loans and entries with restore and confirmed permanent-delete actions; 80 tests pass and production build succeeds - P7-T3 accessibility/theme/tablet review remains.
+- 2026-10-23 - P7-T3 - Added visible keyboard focus, readable loan status badges, improved muted text contrast, retained the theme toggle on narrow screens, and tested light/dark persistence; `npm run verify` passes (80 tests) and production build succeeds - P7-T4 performance check remains.

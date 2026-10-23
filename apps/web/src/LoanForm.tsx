@@ -14,6 +14,7 @@ import {
   rupeesToPaise,
 } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
+import { PropertyCostEditor } from "./PropertyCostEditor.js";
 import {
   emptyLoanFormValues,
   loanFormSchema,
@@ -368,7 +369,7 @@ export function LoanFormPage() {
           <legend><span className="section-number">02</span> Property funding <span className="optional-label">Optional</span></legend>
           <p className="section-help">Record what you paid and how much of the sanctioned loan has been used.</p>
           <div className="form-grid">
-            {field("propertyCost", "Total property cost", { inputMode: "decimal", placeholder: "₹ 0.00" })}
+            {!isEditing && field("propertyCost", "Total property cost", { inputMode: "decimal", placeholder: "₹ 0.00" })}
             {field("initialOwnContribution", isEditing ? "Total own contribution" : "Paid from own funds", { inputMode: "decimal", placeholder: "₹ 0.00" })}
             {field("initialLoanUtilized", isEditing ? "Total loan utilized" : "Loan amount utilized", { inputMode: "decimal", placeholder: "₹ 0.00" })}
           </div>
@@ -405,6 +406,7 @@ export function LoanFormPage() {
           </button>
         </div>
       </form>
+      {isEditing && loanId !== undefined && <PropertyCostEditor loanId={loanId} />}
     </section>
   );
 }

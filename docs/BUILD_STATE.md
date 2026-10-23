@@ -88,7 +88,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] R-T1 Data model, migration and repository changes.
 - [x] R-T2 Engine: split logic, auto EMI generation, dashboard summary, warnings, with tests.
 - [x] R-T3 API endpoints and integration tests.
-- [ ] R-T4 Property cost editor in Loan details.
+- [x] R-T4 Property cost editor in Loan details.
 - [ ] R-T5 Dashboard: banner, KPI cards, both pies, progress bars, glossary and tooltips.
 - [ ] R-T6 Activity form with type-specific fields and the edit mode.
 - [ ] R-T7 Activity table: filters, sort, scrolling, pagination, totals strip, delete and trash.
@@ -98,6 +98,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [ ] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Session log
+- 2026-10-23 - R-T4 - Added grouped agreement/extra-cost editing with suggested/custom names, paise-safe amounts, subtotals, invoice mismatch warning, and stable component IDs; `npm run verify` passes (100 tests) and the web build succeeds - R-T5 is next.
 - 2026-10-23 - R-T3 - Added Activity, property, dashboard, auto-EMI restore, Trash and data-transfer API support; generated past EMIs run at startup, daily, and on input changes; `npm run verify` passes (98 tests) - R-T4 is next.
 - 2026-10-23 - R-T2 - Added effective-dated rate-aware interest splits, idempotent automatic EMI reconciliation, next-EMI and dashboard summary calculation, and funding warnings; `npm run verify` passes (96 tests) - R-T3 is next.
 - 2026-10-23 - R-T1 - Added typed property-cost and unified activity persistence, validated input schemas, migration 0005, legacy financial-record conversion, and repository coverage; focused database tests, workspace typecheck, and targeted lint pass - R-T2 engine is next.

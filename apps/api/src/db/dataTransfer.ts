@@ -2,7 +2,17 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { z } from "zod";
 import { exportDataSchema, type ExportData } from "@loan-dashboard/shared";
-import { schema, loans, payments, disbursements, contributions, rateChanges, notes } from "./schema.js";
+import {
+  activityEntries,
+  contributions,
+  disbursements,
+  loans,
+  notes,
+  payments,
+  propertyCostComponents,
+  rateChanges,
+  schema,
+} from "./schema.js";
 
 export const importRequestSchema = z.object({
   mode: z.enum(["preview", "overwrite"]),
@@ -17,9 +27,17 @@ function validateRelations(data: ExportData): void {
     ...data.rateChanges,
     ...data.payments,
     ...data.notes,
+    ...data.propertyCostComponents,
+    ...data.activityEntries,
   ]) {
     if (!loanIds.has(item.loanId)) {
       throw new Error(`Entry ${item.id} refers to a loan that is not in the import.`);
+    }
+  }
+  const componentIds = new Set(data.propertyCostComponents.map((item) => item.id));
+  for (const item of data.activityEntries) {
+    if (item.componentId !== null && !componentIds.has(item.componentId)) {
+      throw new Error(`Activity ${item.id} refers to a cost component that is not in the import.`);
     }
   }
   const paymentById = new Map(data.payments.map((payment) => [payment.id, payment]));
@@ -36,6 +54,8 @@ export function exportAllData(database: Database.Database): ExportData {
     formatVersion: 1,
     exportedAt: new Date().toISOString(),
     loans: db.select().from(loans).all(),
+    propertyCostComponents: db.select().from(propertyCostComponents).all(),
+    activityEntries: db.select().from(activityEntries).all(),
     disbursements: db.select().from(disbursements).all(),
     contributions: db.select().from(contributions).all(),
     rateChanges: db.select().from(rateChanges).all(),
@@ -53,6 +73,8 @@ export function importAllData(
   validateRelations(data);
   const counts = {
     loans: data.loans.length,
+    propertyCostComponents: data.propertyCostComponents.length,
+    activityEntries: data.activityEntries.length,
     disbursements: data.disbursements.length,
     contributions: data.contributions.length,
     rateChanges: data.rateChanges.length,
@@ -65,6 +87,8 @@ export function importAllData(
 
   const db = drizzle(database, { schema });
   db.transaction((tx) => {
+    tx.delete(activityEntries).run();
+    tx.delete(propertyCostComponents).run();
     tx.delete(notes).run();
     tx.delete(payments).run();
     tx.delete(rateChanges).run();
@@ -72,6 +96,8 @@ export function importAllData(
     tx.delete(disbursements).run();
     tx.delete(loans).run();
     if (data.loans.length > 0) tx.insert(loans).values(data.loans).run();
+    if (data.propertyCostComponents.length > 0) tx.insert(propertyCostComponents).values(data.propertyCostComponents).run();
+    if (data.activityEntries.length > 0) tx.insert(activityEntries).values(data.activityEntries).run();
     if (data.disbursements.length > 0) tx.insert(disbursements).values(data.disbursements).run();
     if (data.contributions.length > 0) tx.insert(contributions).values(data.contributions).run();
     if (data.rateChanges.length > 0) tx.insert(rateChanges).values(data.rateChanges).run();

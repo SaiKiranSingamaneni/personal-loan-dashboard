@@ -37,7 +37,7 @@ describe("SQLite repositories", () => {
     runMigrations(connection.client);
     expect(
       connection.client.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get(),
-    ).toEqual({ count: 5 });
+    ).toEqual({ count: 7 });
     createLoan();
     expect(repositories.loans.getById("loan-1")?.name).toBe("Test loan");
     expect(repositories.loans.listActive()).toHaveLength(1);

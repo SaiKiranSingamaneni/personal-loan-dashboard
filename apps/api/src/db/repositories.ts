@@ -79,6 +79,7 @@ export interface LoanChildrenRepository {
     listByLoan(loanId: string): (typeof propertyCostComponents.$inferSelect)[];
     upsertMany(values: (typeof propertyCostComponents.$inferInsert)[]): void;
     deleteByLoan(loanId: string): void;
+    deleteById(id: string): void;
   };
 }
 
@@ -232,6 +233,11 @@ export function createSqliteRepositories(client: Database.Database): RepositoryS
         deleteByLoan: (loanId) => {
           db.delete(propertyCostComponents)
             .where(eq(propertyCostComponents.loanId, loanId))
+            .run();
+        },
+        deleteById: (id) => {
+          db.delete(propertyCostComponents)
+            .where(eq(propertyCostComponents.id, id))
             .run();
         },
       },

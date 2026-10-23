@@ -97,6 +97,8 @@ describe("initial SQLite schema and demo seed", () => {
           newRate: 8.5, date: "2026-03-01",
         }),
       ]);
+      expect(db.prepare("SELECT origin, user_edited AS userEdited FROM activity_entries WHERE id = 'legacy-payment:p1'").get())
+        .toEqual({ origin: "AUTO", userEdited: 0 });
       expect(db.prepare("SELECT COUNT(*) AS count FROM payments").get()).toEqual({ count: 1 });
     } finally {
       rmSync(priorMigrations, { recursive: true, force: true });

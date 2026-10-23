@@ -213,7 +213,8 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
     .filter((item) => compareIsoDates(item.date, input.asOf) <= 0)
     .reduce((sum, item) => sum + item.amount, 0);
   const active = input.entries.filter((entry) => entry.deletedAt == null);
-  const paidInstallments = active.filter((entry) =>
+  const asOfEntries = active.filter((entry) => compareIsoDates(entry.date, input.asOf) <= 0);
+  const paidInstallments = asOfEntries.filter((entry) =>
     (entry.type === "EMI" || entry.type === "EXTRA_EMI") && entry.status === "PAID",
   );
   const principalRepaid = paidInstallments.reduce(
@@ -228,7 +229,6 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
   const extraCosts = input.components
     .filter((item) => item.group === "OUTSIDE_AGREEMENT")
     .reduce((sum, item) => sum + item.amount, 0);
-  const asOfEntries = active.filter((entry) => compareIsoDates(entry.date, input.asOf) <= 0);
   const selfBank = asOfEntries
     .filter((item) => item.type === "SELF_CONTRIBUTION" && item.source === "BANK")
     .reduce((sum, item) => sum + (item.amount ?? 0), 0);

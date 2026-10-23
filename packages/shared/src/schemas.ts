@@ -182,6 +182,30 @@ export const propertyCostComponentSchema = z.object({
 }).strict();
 
 export const propertyCostComponentsSchema = z.array(propertyCostComponentSchema).max(200);
+export const propertyUpdateSchema = z.object({
+  components: propertyCostComponentsSchema,
+  invoiceGrandTotal: z.number().int().nonnegative().safe().nullable().optional(),
+}).strict().superRefine((value, context) => {
+  const ids = value.components.flatMap((component) => component.id === undefined ? [] : [component.id]);
+  if (new Set(ids).size !== ids.length) {
+    context.addIssue({ code: "custom", path: ["components"], message: "Component ids must be unique." });
+  }
+});
+
+export const activityQuerySchema = z.object({
+  type: z.string().regex(/^(SELF_CONTRIBUTION|LOAN_DISBURSEMENT|EMI|EXTRA_EMI|RATE_CHANGE)(,(SELF_CONTRIBUTION|LOAN_DISBURSEMENT|EMI|EXTRA_EMI|RATE_CHANGE))*$/).optional(),
+  status: z.enum(["PAID", "MISSED", "SKIPPED", "UPCOMING"]).optional(),
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+  q: z.string().trim().max(100).optional(),
+  sort: z.enum(["newest", "oldest"]).default("newest"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().refine((value) => [10, 25, 50].includes(value)).default(10),
+}).strict().superRefine((query, context) => {
+  if (query.from !== undefined && query.to !== undefined && query.from > query.to) {
+    context.addIssue({ code: "custom", path: ["from"], message: "Start date must be on or before end date." });
+  }
+});
 
 export const timelineQuerySchema = z
   .object({
@@ -243,3 +267,4 @@ export type LoanEditInput = z.infer<typeof loanEditSchema>;
 export type SimulationScenarioInput = z.infer<typeof simulationScenarioSchema>;
 export type ActivityEntryCreateInput = z.infer<typeof activityEntryCreateSchema>;
 export type PropertyCostComponentInput = z.infer<typeof propertyCostComponentSchema>;
+export type ActivityQueryInput = z.infer<typeof activityQuerySchema>;

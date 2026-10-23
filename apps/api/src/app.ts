@@ -7,6 +7,7 @@ import { createSimulationRouter } from "./routes/simulate.js";
 import { BackupService } from "./db/backup.js";
 import type Database from "better-sqlite3";
 import { createDataSafetyRouter } from "./routes/dataSafety.js";
+import { createActivityRouter } from "./routes/activity.js";
 
 export function createApp(
   repositories?: RepositorySet,
@@ -42,6 +43,7 @@ export function createApp(
     });
     app.use("/api/loans", entries.collections);
     app.use("/api/loans", createLoansRouter(repositories));
+    app.use("/api", createActivityRouter(repositories));
     app.use("/api/payments", entries.payments);
     app.use("/api/disbursements", entries.disbursements);
     app.use("/api/contributions", entries.contributions);

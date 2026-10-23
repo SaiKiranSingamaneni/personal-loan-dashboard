@@ -55,6 +55,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] P8 - Section 10 acceptance criteria pass; tag `v1.0.0`.
 
 ## Decisions log
+- 2026-10-23 - Keep version-1 export imports backward compatible by defaulting new Activity/property arrays to empty while exporting the added records and invoice total on every current backup.
 - 2026-10-23 - Derive historical automatic installments and dashboard financial totals in pure shared functions; preserve user edits and deleted auto-installment dates during recomputation.
 - 2026-10-23 - Add unified activity and property cost tables additively; migrate financial records while retaining legacy source tables so prior exports and standalone notes remain preserved during the staged UI/API transition.
 - 2026-10-23 - Use npm workspaces and a shared root TypeScript/ESLint/Prettier/Vitest toolchain - matches the specified npm monorepo and keeps setup local-first.
@@ -86,7 +87,7 @@ Current task: Complete - Last updated: 2026-10-23
 ## Loan screen rewrite tasks
 - [x] R-T1 Data model, migration and repository changes.
 - [x] R-T2 Engine: split logic, auto EMI generation, dashboard summary, warnings, with tests.
-- [ ] R-T3 API endpoints and integration tests.
+- [x] R-T3 API endpoints and integration tests.
 - [ ] R-T4 Property cost editor in Loan details.
 - [ ] R-T5 Dashboard: banner, KPI cards, both pies, progress bars, glossary and tooltips.
 - [ ] R-T6 Activity form with type-specific fields and the edit mode.
@@ -97,6 +98,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [ ] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Session log
+- 2026-10-23 - R-T3 - Added Activity, property, dashboard, auto-EMI restore, Trash and data-transfer API support; generated past EMIs run at startup, daily, and on input changes; `npm run verify` passes (98 tests) - R-T4 is next.
 - 2026-10-23 - R-T2 - Added effective-dated rate-aware interest splits, idempotent automatic EMI reconciliation, next-EMI and dashboard summary calculation, and funding warnings; `npm run verify` passes (96 tests) - R-T3 is next.
 - 2026-10-23 - R-T1 - Added typed property-cost and unified activity persistence, validated input schemas, migration 0005, legacy financial-record conversion, and repository coverage; focused database tests, workspace typecheck, and targeted lint pass - R-T2 engine is next.
 - 2026-10-23 - Post-v1 EMI basis and loan delete - Added selectable sanctioned/disbursed EMI basis, optional pre-EMI interest-only behavior, daily/monthly pure payment split with carry-forward warnings, payment breakdown API/UI, and sidebar loan-to-Trash action; `npm run verify` passes (90 tests) - no outstanding work.

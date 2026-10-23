@@ -20,6 +20,7 @@ import { validateBody } from "../http/validation.js";
 import { parseInput } from "../http/validation.js";
 import type { RepositorySet } from "../db/repositories.js";
 import { getTimeline } from "./timeline.js";
+import { reconcileLoanAutoEmis } from "../services/autoEmis.js";
 
 function getLoan(repositories: RepositorySet, id: string) {
   const loan = repositories.loans.getById(id);
@@ -239,8 +240,9 @@ export function createLoansRouter(repositories: RepositorySet): Router {
     const loan = repositories.transaction(() => {
       const created = repositories.loans.create(createLoanRecord(input, now));
       if (input.initialOwnContribution > 0) {
+        const contributionId = randomUUID();
         repositories.children.contributions.create({
-          id: randomUUID(),
+          id: contributionId,
           loanId: created.id,
           date: created.startDate,
           amount: input.initialOwnContribution,
@@ -249,10 +251,19 @@ export function createLoansRouter(repositories: RepositorySet): Router {
           createdAt: now,
           updatedAt: now,
         });
+        repositories.children.activityEntries.create({
+          id: contributionId, loanId: created.id, type: "SELF_CONTRIBUTION", date: created.startDate,
+          amount: input.initialOwnContribution, title: "Initial self contribution", notes: "Initial own contribution",
+          origin: "USER", userEdited: true, deletedAt: null, source: "OTHER", componentId: null,
+          trancheLabel: null, bankReference: null, status: null, dueDate: null, mode: null,
+          newRatePercent: null, effectiveDate: null, rateOption: null, interestPart: null, principalPart: null,
+          createdAt: now, updatedAt: now,
+        });
       }
       if (input.initialLoanUtilized > 0) {
+        const disbursementId = randomUUID();
         repositories.children.disbursements.create({
-          id: randomUUID(),
+          id: disbursementId,
           loanId: created.id,
           date: created.startDate,
           amount: input.initialLoanUtilized,
@@ -261,9 +272,18 @@ export function createLoansRouter(repositories: RepositorySet): Router {
           createdAt: now,
           updatedAt: now,
         });
+        repositories.children.activityEntries.create({
+          id: disbursementId, loanId: created.id, type: "LOAN_DISBURSEMENT", date: created.startDate,
+          amount: input.initialLoanUtilized, title: "Initial loan disbursement", notes: "Initial loan utilization",
+          origin: "USER", userEdited: true, deletedAt: null, source: null, componentId: null,
+          trancheLabel: null, bankReference: null, status: null, dueDate: null, mode: null,
+          newRatePercent: null, effectiveDate: null, rateOption: null, interestPart: null, principalPart: null,
+          createdAt: now, updatedAt: now,
+        });
       }
       return created;
     });
+    reconcileLoanAutoEmis(repositories, loan.id);
     response.status(201).json(loan);
   });
 
@@ -402,6 +422,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
     if (updated === undefined) {
       throw new HttpError(404, "LOAN_NOT_FOUND", "Loan was not found.");
     }
+    reconcileLoanAutoEmis(repositories, id);
     response.json(updated);
   });
 

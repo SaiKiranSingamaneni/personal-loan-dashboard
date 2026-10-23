@@ -13,6 +13,7 @@ const trashTypeSchema = z.enum([
   "contribution",
   "rate-change",
   "note",
+  "activity",
 ]);
 const permanentDeleteSchema = z.object({ confirmation: z.literal("DELETE") }).strict();
 
@@ -38,6 +39,8 @@ function isDeleted(repositories: RepositorySet, type: z.infer<typeof trashTypeSc
       return repositories.children.rateChanges.getDeletedById(id) !== undefined;
     case "note":
       return repositories.children.notes.getDeletedById(id) !== undefined;
+    case "activity":
+      return repositories.children.activityEntries.getDeletedById(id) !== undefined;
   }
 }
 
@@ -49,6 +52,7 @@ function restore(repositories: RepositorySet, type: z.infer<typeof trashTypeSche
     case "contribution": return repositories.children.contributions.restore(id);
     case "rate-change": return repositories.children.rateChanges.restore(id);
     case "note": return repositories.children.notes.restore(id);
+    case "activity": return repositories.children.activityEntries.restore(id);
   }
 }
 
@@ -60,6 +64,7 @@ function hardDelete(repositories: RepositorySet, type: z.infer<typeof trashTypeS
     case "contribution": return repositories.children.contributions.hardDelete(id);
     case "rate-change": return repositories.children.rateChanges.hardDelete(id);
     case "note": return repositories.children.notes.hardDelete(id);
+    case "activity": return repositories.children.activityEntries.hardDelete(id);
   }
 }
 
@@ -96,6 +101,7 @@ export function createDataSafetyRouter(
       ...data.contributions.filter((item) => item.deletedAt !== null).map((item) => ({ entityType: "contribution", ...item })),
       ...data.rateChanges.filter((item) => item.deletedAt !== null).map((item) => ({ entityType: "rate-change", ...item })),
       ...data.notes.filter((item) => item.deletedAt !== null).map((item) => ({ entityType: "note", ...item })),
+      ...repositories.children.activityEntries.listDeleted().map((item) => ({ entityType: "activity", ...item })),
     ]);
   });
 

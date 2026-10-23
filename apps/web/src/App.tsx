@@ -22,6 +22,7 @@ import { PrepaymentImpact } from "./PrepaymentImpact.js";
 import { AllLoansOverview } from "./AllLoansOverview.js";
 import { WhatIfSimulator } from "./WhatIfSimulator.js";
 import { EmiCalculatorPage } from "./EmiCalculator.js";
+import { buildDueReminderSummary, localIsoToday } from "./dueReminders.js";
 
 interface LoanListItem {
   id: string;
@@ -36,6 +37,12 @@ interface LoanSummaryResponse {
   summary: {
     outstandingPrincipal: number;
   };
+}
+
+interface ReminderScheduleRow {
+  dueDate: string;
+  emi: number;
+  status: "scheduled" | "paid" | "missed";
 }
 
 interface LoanListError {
@@ -95,6 +102,19 @@ function AppShell() {
       staleTime: 30_000,
     })),
   });
+  const reminderSchedules = useQueries({
+    queries: loans.map((loan) => ({
+      queryKey: ["loans", loan.id, "schedule", "reminders"],
+      queryFn: () => apiRequest<ReminderScheduleRow[]>(`/api/loans/${loan.id}/schedule`),
+      enabled: loans.length > 0,
+      staleTime: 30_000,
+    })),
+  });
+  const reminderSummary = buildDueReminderSummary(loans.map((loan, index) => ({
+    id: loan.id,
+    name: loan.name,
+    schedule: reminderSchedules[index]?.data ?? [],
+  })), localIsoToday());
   const selectedId = useMemo(() => {
     const parts = location.pathname.split("/");
     return parts[1] === "loans" ? parts[2] : undefined;
@@ -129,6 +149,7 @@ function AppShell() {
           <span>Your loans</span>
           <span className="loan-count">{loans.length}</span>
         </div>
+        {reminderSummary.overdueCount > 0 && <div className="overdue-sidebar-count" aria-label={`${reminderSummary.overdueCount} overdue payments`}><span>{reminderSummary.overdueCount}</span> overdue</div>}
         <NavLink to="/" end className={({ isActive }) => `all-loans-link${isActive ? " is-active" : ""}`}>
           <span className="all-loans-icon" aria-hidden="true">▦</span><span>All loans</span>
         </NavLink>
@@ -180,6 +201,10 @@ function AppShell() {
           <div className="breadcrumb"><span>Loans</span><span aria-hidden="true">/</span><strong>{loans.find((loan) => loan.id === selectedId)?.name ?? "Overview"}</strong></div>
           <div className="topbar-right"><span className="local-badge"><span /> Local only</span></div>
         </header>
+        {reminderSummary.upcoming.length > 0 && <section className="due-reminder-banner" role="status" aria-label="Dues in the next seven days">
+          <div className="due-reminder-heading"><span className="due-reminder-icon" aria-hidden="true">◷</span><div><strong>Due in the next 7 days</strong><span>{reminderSummary.upcoming.length} upcoming {reminderSummary.upcoming.length === 1 ? "payment" : "payments"}</span></div></div>
+          <ul>{reminderSummary.upcoming.map((item) => <li key={`${item.loanId}-${item.date}`}><Link to={`/loans/${item.loanId}?tab=activity`}><span>{item.loanName} · {item.date}</span><strong>{formatIndianMoney(asPaise(item.amount))}</strong></Link></li>)}</ul>
+        </section>}
         <div className="content-area">
           {loans.length === 0 && !isFormRoute && location.pathname !== "/calculator" ? (
             <EmptyLoans />

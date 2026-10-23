@@ -1,5 +1,5 @@
 # Build state
-Current task: P8-T1 - Last updated: 2026-10-23
+Current task: P8-T2 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -39,7 +39,7 @@ Current task: P8-T1 - Last updated: 2026-10-23
 - [x] P7-T2 Trash view with restore and permanent delete.
 - [x] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
 - [x] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
-- [ ] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
+- [x] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
 - [ ] P8-T2 Optional Playwright smoke test of the main flow.
 - [ ] P8-T3 Walk through every item in section 10, record the result in `docs/BUILD_STATE.md`, fix failures.
 
@@ -124,3 +124,4 @@ Current task: P8-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P7-T2 - Added a Trash page listing deleted loans and entries with restore and confirmed permanent-delete actions; 80 tests pass and production build succeeds - P7-T3 accessibility/theme/tablet review remains.
 - 2026-10-23 - P7-T3 - Added visible keyboard focus, readable loan status badges, improved muted text contrast, retained the theme toggle on narrow screens, and tested light/dark persistence; `npm run verify` passes (80 tests) and production build succeeds - P7-T4 performance check remains.
 - 2026-10-23 - P7-T4 - Exercised dashboard bootstrap endpoints using five loans with 600 payment records each and confirmed the full export/import data round trip; generated dataset requests completed under one second and `npm run verify` passes (81 tests) - P7 gate passes; P8-T1 README handover remains.
+- 2026-10-23 - P8-T1 - Completed setup, command, workspace, exact rounding, backup/restore, JSON transfer, and future Postgres adapter documentation; `npm run verify` passes (81 tests) - P8-T2 optional Playwright smoke test remains.

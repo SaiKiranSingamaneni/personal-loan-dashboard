@@ -185,6 +185,8 @@ html[data-theme="dark"] .button-danger { color: #f38b81; }
 .principal-interest-chart { width: 100%; height: 300px; margin-top: 8px; }
 .cumulative-interest-card { margin-top: 18px; }
 .cumulative-interest-chart { width: 100%; height: 290px; margin-top: 8px; }
+.payment-history-card { margin-top: 18px; }
+.payment-history-chart { width: 100%; height: 300px; margin-top: 8px; }
 .chart-toggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
 .chart-toggle button { min-height: 26px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 600 10px ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
 .chart-toggle button.is-selected { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgb(23 38 66 / 12%); }

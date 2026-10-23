@@ -1,5 +1,5 @@
 # Build state
-Current task: P5-T4 - Last updated: 2026-10-23
+Current task: P5-T5 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -29,7 +29,7 @@ Current task: P5-T4 - Last updated: 2026-10-23
 - [x] P5-T1 Balance over time (projected vs actual).
 - [x] P5-T2 Principal vs interest per period (monthly/yearly toggle).
 - [x] P5-T3 Cumulative interest area chart.
-- [ ] P5-T4 Payment history chart with missed payments highlighted.
+- [x] P5-T4 Payment history chart with missed payments highlighted.
 - [ ] P5-T5 Amortization table with paid markers, sorting and CSV export.
 - [ ] P5-T6 Prepayment impact comparison.
 - [ ] P6-T1 All-loans overview (totals, per-loan comparison chart, combined upcoming dues).
@@ -67,6 +67,7 @@ Current task: P5-T4 - Last updated: 2026-10-23
 - 2026-10-23 - Calculate actual balance from dated disbursements less principal parts of paid payments and stop the actual series at today - keeps the projection from being mistaken for recorded future activity.
 - 2026-10-23 - Aggregate projected principal and interest into calendar month or year buckets for the stacked chart - makes period comparisons match due dates and leaves the schedule as the single source of totals.
 - 2026-10-23 - Build cumulative interest only from paid payment records, carrying the running total through months without a payment - keeps scheduled or missed interest out of the actual-paid chart.
+- 2026-10-23 - Show paid, scheduled, and missed payment amounts as separate monthly bar series - makes missed installments visually distinct while retaining the scheduled-versus-actual comparison.
 
 ## Blockers
 - none
@@ -103,3 +104,4 @@ Current task: P5-T4 - Last updated: 2026-10-23
 - 2026-10-23 - P5-T1 - Added a projected versus actual outstanding balance line chart, including staged funding and actual paid principal; 62 tests pass and production build succeeds - P5-T2 principal-versus-interest periods remain.
 - 2026-10-23 - P5-T2 - Added stacked principal/interest bars with monthly/yearly aggregation and a period toggle; 64 tests pass and production build succeeds - P5-T3 cumulative interest chart remains.
 - 2026-10-23 - P5-T3 - Added an actual cumulative interest area chart with monthly totals, flat months, tooltips, and a no-paid-interest state; 66 tests pass and production build succeeds - P5-T4 payment history chart remains.
+- 2026-10-23 - P5-T4 - Added monthly actual, scheduled, and missed payment bars with missed payments in a distinct warning color; 68 tests pass and production build succeeds - P5-T5 amortization table remains.

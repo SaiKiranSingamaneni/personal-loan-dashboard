@@ -12,7 +12,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - [x] P1-T5 Floating rate changes in both modes.
 - [x] P1-T6 Staged disbursement and pre-EMI interest.
 - [x] P1-T7 Summary metrics from section 4.1 and the funding reconciliation checks with warnings.
-- [ ] P1-T8 Pure what-if `simulate()` function.
+- [x] P1-T8 Pure what-if `simulate()` function.
 - [ ] P2-T1 Schema and migrations for every entity in section 3 (soft delete, timestamps), plus the demo seed script.
 - [ ] P2-T2 Repository interfaces and SQLite implementation (WAL on, transactions for multi-row writes).
 - [ ] P2-T3 Express skeleton: bind to 127.0.0.1, shared Zod validation, error format, health endpoint.
@@ -71,3 +71,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P1-T5 - Added floating rate reset recalculation for keep-EMI and keep-tenure modes - P1-T6 staged disbursement remains.
 - 2026-10-23 - P1-T6 - Added staged funding projections with pre-EMI interest on disbursed funds and configurable EMI start - P1-T7 summary metrics remain.
 - 2026-10-23 - P1-T7 - Added summary metrics and funding reconciliation warnings for property funding, sanction, and payment overages - P1-T8 what-if simulator remains.
+- 2026-10-23 - P1-T8 - Added pure one-time/recurring prepayment and rate-change what-if projections - P1 randomized invariants and coverage gate remain.

@@ -14,6 +14,7 @@ import { LoanFormPage } from "./LoanForm.js";
 import { LoanSummaryDashboard, type LoanSummaryData } from "./LoanSummaryDashboard.js";
 import { LoanEntries } from "./LoanEntries.js";
 import { LoanTimeline } from "./LoanTimeline.js";
+import { BalanceOverTimeChart } from "./BalanceOverTimeChart.js";
 
 interface LoanListItem {
   id: string;
@@ -244,7 +245,10 @@ function LoanPage() {
         ) : summaryQuery.error ? (
           <ApiError error={summaryQuery.error} />
         ) : summaryQuery.data ? (
-          <LoanSummaryDashboard summary={summaryQuery.data.summary} />
+          <>
+            <LoanSummaryDashboard summary={summaryQuery.data.summary} />
+            <BalanceOverTimeChart loanId={loan.id} />
+          </>
         ) : null
       ) : tab === "activity" ? (
         <>

@@ -16,6 +16,7 @@ import { LoanEntries } from "./LoanEntries.js";
 import { LoanTimeline } from "./LoanTimeline.js";
 import { BalanceOverTimeChart } from "./BalanceOverTimeChart.js";
 import { PrincipalInterestChart } from "./PrincipalInterestChart.js";
+import { CumulativeInterestChart } from "./CumulativeInterestChart.js";
 
 interface LoanListItem {
   id: string;
@@ -250,6 +251,7 @@ function LoanPage() {
             <LoanSummaryDashboard summary={summaryQuery.data.summary} />
             <BalanceOverTimeChart loanId={loan.id} />
             <PrincipalInterestChart loanId={loan.id} />
+            <CumulativeInterestChart loanId={loan.id} />
           </>
         ) : null
       ) : tab === "activity" ? (

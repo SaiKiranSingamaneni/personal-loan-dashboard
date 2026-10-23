@@ -59,6 +59,15 @@ describe("loan REST endpoints", () => {
     );
   });
 
+  it("archives a loan without deleting its data", async () => {
+    const created = await request(app).post("/api/loans").send(validLoan);
+    const id = created.body.id as string;
+    const archived = await request(app).post(`/api/loans/${id}/archive`);
+    expect(archived.status).toBe(200);
+    expect(archived.body.archivedAt).toEqual(expect.any(String));
+    expect((await request(app).get(`/api/loans/${id}`)).status).toBe(200);
+  });
+
   it("returns a full amortization schedule and derived summary", async () => {
     const created = await request(app).post("/api/loans").send(validLoan);
     const id = created.body.id as string;

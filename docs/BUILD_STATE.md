@@ -1,5 +1,5 @@
 # Build state
-Current task: P2 gate - Last updated: 2026-10-23
+Current task: P3-T1 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -46,7 +46,7 @@ Current task: P2 gate - Last updated: 2026-10-23
 ## Phase gates
 - [x] P0 - `npm run verify` passes on the empty workspaces.
 - [x] P1 - Engine tests pass; invariants hold; engine coverage is at least 90%.
-- [ ] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
+- [x] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
 - [ ] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
 - [ ] P4 - Timeline sorts entries and distinguishes future and overdue items.
 - [ ] P5 - All charts have tooltips/legends and update on loan switch.
@@ -84,3 +84,4 @@ Current task: P2 gate - Last updated: 2026-10-23
 - 2026-10-23 - P2-T5 - Added validated CRUD routes for payments, disbursements, contributions, rate changes, and notes; 42 tests pass - P2-T6 timeline endpoint remains.
 - 2026-10-23 - P2-T6 - Added merged timeline endpoint with type/date/text filtering, stable sort order, and upcoming/overdue flags; 45 tests pass - P2-T7 data safety endpoints remain.
 - 2026-10-23 - P2-T7 - Added stateless simulation, validated export/import preview and overwrite, Trash restore/permanent-delete confirmation, and backup rotation; 49 tests pass - P2 integration coverage and startup-backup gate checks remain.
+- 2026-10-23 - P2 gate - Expanded endpoint validation coverage to 51 tests and verified a startup backup is created in a temporary database directory - P3-T1 frontend shell is next.

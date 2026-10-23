@@ -6,3 +6,5 @@ export { parseInput } from "./http/validation.js";
 export { validateBody } from "./http/validation.js";
 export { createLoansRouter } from "./routes/loans.js";
 export { getTimeline } from "./routes/timeline.js";
+export { BackupService } from "./db/backup.js";
+export { initializeApi, startServer } from "./server.js";

@@ -71,6 +71,19 @@ describe("data safety endpoints", () => {
     expect(roundTrip.body.loans).toEqual(exported.body.loans);
     expect(roundTrip.body.contributions).toEqual(exported.body.contributions);
 
+    const brokenRelationship = {
+      ...exported.body,
+      contributions: exported.body.contributions.map((item: { id: string }) => ({
+        ...item,
+        loanId: "missing-loan",
+      })),
+    };
+    const invalidRelationship = await request(app)
+      .post("/api/import")
+      .send({ mode: "overwrite", data: brokenRelationship });
+    expect(invalidRelationship.status).toBe(400);
+    expect((await request(app).get("/api/loans")).body).toHaveLength(1);
+
     const invalid = await request(app)
       .post("/api/import")
       .send({ mode: "overwrite", data: { ...exported.body, formatVersion: 99 } });
@@ -103,6 +116,27 @@ describe("data safety endpoints", () => {
     const restored = await request(app).post(`/api/trash/loan/${id}/restore`);
     expect(restored.status).toBe(204);
     expect((await request(app).get(`/api/loans/${id}`)).status).toBe(200);
+
+    const payment = await request(app).post(`/api/loans/${id}/payments`).send({
+      date: "2026-02-01",
+      amount: 1000,
+      type: "other",
+      principalPart: 0,
+      interestPart: 0,
+      status: "paid",
+    });
+    const paymentId = payment.body.id as string;
+    await request(app).delete(`/api/payments/${paymentId}`);
+    expect((await request(app).get("/api/trash")).body).toHaveLength(1);
+    expect(
+      (await request(app).post(`/api/trash/payment/${paymentId}/restore`)).status,
+    ).toBe(204);
+    await request(app).delete(`/api/payments/${paymentId}`);
+    expect(
+      (await request(app)
+        .delete(`/api/trash/payment/${paymentId}`)
+        .send({ confirmation: "DELETE" })).status,
+    ).toBe(204);
 
     await request(app).delete(`/api/loans/${id}`);
     const deleted = await request(app)
@@ -139,5 +173,13 @@ describe("data safety endpoints", () => {
     const backup = await request(app).post("/api/backup");
     expect(backup.status).toBe(201);
     expect(backup.body.path).toContain("loans-");
+    const invalidSimulation = await request(app).post("/api/simulate").send({
+      principal: -1,
+      annualRatePercent: 8.5,
+      tenureMonths: 120,
+      firstDueDate: "2026-11-05",
+      scenario: { type: "prepayment", amount: 100, date: "2026-12-05", mode: "invalid" },
+    });
+    expect(invalidSimulation.status).toBe(400);
   });
 });

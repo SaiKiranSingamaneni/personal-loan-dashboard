@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { openSqliteDatabase } from "./connection.js";
 import { BackupService } from "./backup.js";
+import { initializeApi } from "../server.js";
 
 describe("SQLite backup service", () => {
   let directory: string | undefined;
@@ -35,6 +36,19 @@ describe("SQLite backup service", () => {
       expect(backups).toContain("loans-20350607-0809.db");
     } finally {
       connection.close();
+    }
+  });
+
+  it("creates a startup backup before returning the API runtime", async () => {
+    directory = mkdtempSync(join(tmpdir(), "loan-dashboard-startup-backup-"));
+    const databasePath = join(directory, "loans.db");
+    const backupDirectory = join(directory, "backups");
+    const runtime = await initializeApi(databasePath, backupDirectory);
+    try {
+      expect(readdirSync(backupDirectory).filter((name) => name.endsWith(".db"))).toHaveLength(1);
+      expect(runtime.app).toBeDefined();
+    } finally {
+      runtime.close();
     }
   });
 });

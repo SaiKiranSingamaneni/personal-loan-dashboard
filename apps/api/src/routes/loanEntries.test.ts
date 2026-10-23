@@ -109,6 +109,24 @@ describe("payment and loan entry endpoints", () => {
       .send({ date: "2026-01-01", amount: -1 });
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    expect(
+      (await request(app)
+        .post(`/api/loans/${loanId}/contributions`)
+        .send({ date: "2026-01-01", amount: 0 })).status,
+    ).toBe(400);
+    expect(
+      (await request(app).post(`/api/loans/${loanId}/rate-changes`).send({
+        effectiveDate: "2026-01-01",
+        annualRatePercent: -2,
+        mode: "invalid",
+      })).status,
+    ).toBe(400);
+    expect(
+      (await request(app).post(`/api/loans/${loanId}/notes`).send({
+        date: "2026-01-01",
+        text: "  ",
+      })).status,
+    ).toBe(400);
     const incompletePrepayment = await request(app)
       .post(`/api/loans/${loanId}/payments`)
       .send({

@@ -1,5 +1,5 @@
 # Build state
-Current task: P2-T1 - Last updated: 2026-10-23
+Current task: P2-T2 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -13,7 +13,7 @@ Current task: P2-T1 - Last updated: 2026-10-23
 - [x] P1-T6 Staged disbursement and pre-EMI interest.
 - [x] P1-T7 Summary metrics from section 4.1 and the funding reconciliation checks with warnings.
 - [x] P1-T8 Pure what-if `simulate()` function.
-- [ ] P2-T1 Schema and migrations for every entity in section 3 (soft delete, timestamps), plus the demo seed script.
+- [x] P2-T1 Schema and migrations for every entity in section 3 (soft delete, timestamps), plus the demo seed script.
 - [ ] P2-T2 Repository interfaces and SQLite implementation (WAL on, transactions for multi-row writes).
 - [ ] P2-T3 Express skeleton: bind to 127.0.0.1, shared Zod validation, error format, health endpoint.
 - [ ] P2-T4 Loans CRUD, `/summary` and `/schedule` endpoints.
@@ -75,3 +75,4 @@ Current task: P2-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P1-T7 - Added summary metrics and funding reconciliation warnings for property funding, sanction, and payment overages - P1-T8 what-if simulator remains.
 - 2026-10-23 - P1-T8 - Added pure one-time/recurring prepayment and rate-change what-if projections - P1 randomized invariants and coverage gate remain.
 - 2026-10-23 - P1 gate - Added 100 deterministic randomized schedule invariant cases and enforced 90% line/function/statement coverage; 28 tests pass and aggregate coverage is above threshold - P2-T1 is next.
+- 2026-10-23 - P2-T1 - Added Drizzle table schemas, the initial SQLite migration for all loan entities, and a transactional two-loan seed script - P2-T2 repository and migration runner remain.

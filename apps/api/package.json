@@ -2,5 +2,16 @@
   "name": "@loan-dashboard/api",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "drizzle-orm": "^0.44.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "tsx": "^4.20.6"
+  },
+  "scripts": {
+    "seed": "tsx src/db/seed.ts"
+  }
 }

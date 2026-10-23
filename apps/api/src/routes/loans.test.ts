@@ -119,4 +119,33 @@ describe("loan REST endpoints", () => {
     expect(summary.body.summary.emi).toBe(schedule.body[0].emi);
     expect(summary.body.summary.sanctionedNotDisbursed).toBe(2_000_000);
   });
+
+  it("generates scheduled EMI entries idempotently and refreshes only still-scheduled rows", async () => {
+    const created = await request(app).post("/api/loans").send(validLoan);
+    const id = created.body.id as string;
+    const path = `/api/loans/${id}/payments/generate-scheduled`;
+    const first = await request(app).post(path).send();
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual({ created: 24, updated: 0, total: 24 });
+    expect((await request(app).get(`/api/loans/${id}/payments`)).body).toHaveLength(24);
+
+    const second = await request(app).post(path).send();
+    expect(second.body).toEqual({ created: 0, updated: 24, total: 24 });
+    const payments = (await request(app).get(`/api/loans/${id}/payments`)).body as {
+      id: string;
+      amount: number;
+      status: string;
+      scheduledPeriod: number;
+    }[];
+    const firstPayment = payments.find((payment) => payment.scheduledPeriod === 1)!;
+    await request(app).put(`/api/payments/${firstPayment.id}`).send({ status: "paid", date: "2026-11-08", amount: 999_999_999 });
+    const third = await request(app).post(path).send();
+    expect(third.body).toEqual({ created: 0, updated: 23, total: 24 });
+    const after = (await request(app).get(`/api/loans/${id}/payments`)).body as typeof payments;
+    expect(after.find((payment) => payment.scheduledPeriod === 1)).toMatchObject({
+      status: "paid",
+      date: "2026-11-08",
+      amount: 999_999_999,
+    });
+  });
 });

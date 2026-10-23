@@ -135,6 +135,55 @@ export function createLoansRouter(repositories: RepositorySet): Router {
     response.json(repositories.loans.list());
   });
 
+  router.post("/:id/payments/generate-scheduled", (request, response) => {
+    const id = routeId(request);
+    const { schedule } = loanSchedule(repositories, id);
+    const existingByPeriod = new Map(
+      repositories.children.payments.listByLoan(id)
+        .filter((payment) => payment.scheduledPeriod !== null)
+        .map((payment) => [payment.scheduledPeriod!, payment]),
+    );
+    const now = new Date().toISOString();
+    let created = 0;
+    let updated = 0;
+    repositories.transaction(() => {
+      for (const row of schedule) {
+        const existing = existingByPeriod.get(row.period);
+        if (existing !== undefined) {
+          if (existing.type === "emi" && existing.status === "scheduled") {
+            repositories.children.payments.update(existing.id, {
+              date: row.dueDate,
+              amount: row.emi,
+              principalPart: row.principal,
+              interestPart: row.interest,
+              updatedAt: now,
+            });
+            updated += 1;
+          }
+          continue;
+        }
+        repositories.children.payments.create({
+          id: randomUUID(),
+          loanId: id,
+          date: row.dueDate,
+          amount: row.emi,
+          type: "emi",
+          principalPart: row.principal,
+          interestPart: row.interest,
+          status: "scheduled",
+          scheduledPeriod: row.period,
+          prepaymentMode: null,
+          note: null,
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        created += 1;
+      }
+    });
+    response.json({ created, updated, total: schedule.length });
+  });
+
   router.post("/", validateBody(loanCreateSchema), (request, response) => {
     const input = request.body as LoanCreateInput;
     const now = new Date().toISOString();

@@ -93,10 +93,15 @@ export function LoanEntries({ loanId }: { loanId: string }) {
   const listQueries = useQuery({
     queryKey: ["loans", loanId, "entries"],
     queryFn: async () => {
+      await apiRequest<{ created: number; updated: number; total: number }>(
+        `/api/loans/${loanId}/payments/generate-scheduled`,
+        { method: "POST", body: "{}" },
+      );
       const results = await Promise.all(entryTypes.map(async (item) => ({
         type: item.value,
         records: await apiRequest<EntryRecord[]>(`/api/loans/${loanId}/${item.route}`),
       })));
+      void queryClient.invalidateQueries({ queryKey: ["loans", loanId, "timeline"] });
       return results.flatMap((result) => result.records.map((record) => ({ ...record, entryType: result.type })));
     },
   });
@@ -163,6 +168,11 @@ export function LoanEntries({ loanId }: { loanId: string }) {
       paymentId: typeof record.paymentId === "string" ? record.paymentId : "",
     });
     setFormError(null);
+  }
+
+  function beginMarkPaid(record: EntryRecord & { entryType: EntryType }) {
+    beginEdit(record);
+    setValues((previous) => ({ ...previous, date: todayIso(), status: "paid" }));
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -259,7 +269,7 @@ export function LoanEntries({ loanId }: { loanId: string }) {
             return <li className="entry-row" key={`${type}-${entry.id}`}>
               <div><span className="entry-kind">{label}</span><strong>{entryTitle(entry, type)}</strong><span className="entry-date">{entryDate(entry)}</span></div>
               {typeof entry.amount === "number" && <span className="entry-amount">{formatIndianMoney(asPaise(entry.amount))}</span>}
-              <div className="entry-row-actions"><button className="button button-secondary" type="button" onClick={() => beginEdit(entry as EntryRecord & { entryType: EntryType })}>Edit</button><button className="button button-danger" type="button" onClick={() => { if (window.confirm(`Delete this ${label.toLowerCase()}? It will move to Trash.`)) deleteMutation.mutate(entry as EntryRecord); }}>Delete</button></div>
+              <div className="entry-row-actions">{type === "payment" && entry.status === "scheduled" && <button className="button button-primary" type="button" onClick={() => beginMarkPaid(entry as EntryRecord & { entryType: EntryType })}>Mark paid</button>}<button className="button button-secondary" type="button" onClick={() => beginEdit(entry as EntryRecord & { entryType: EntryType })}>Edit</button><button className="button button-danger" type="button" onClick={() => { if (window.confirm(`Delete this ${label.toLowerCase()}? It will move to Trash.`)) deleteMutation.mutate(entry as EntryRecord); }}>Delete</button></div>
             </li>;
           })}</ul>
         )}

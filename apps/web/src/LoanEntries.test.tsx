@@ -85,4 +85,44 @@ describe("loan entry forms", () => {
     expect(screen.getByLabelText("Note text")).toBeTruthy();
     expect(screen.getByLabelText("Linked payment (optional)")).toBeTruthy();
   });
+
+  it("generates scheduled payments and opens a paid entry for adjustment", async () => {
+    const user = userEvent.setup();
+    const payment = {
+      id: "payment-1", loanId: "loan-1", date: "2099-01-05", amount: 10000,
+      type: "emi", principalPart: 8000, interestPart: 2000, status: "scheduled",
+      scheduledPeriod: 1, prepaymentMode: null, note: null, deletedAt: null,
+    };
+    const requests: { path: string; method: string; body?: Record<string, unknown> }[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), window.location.origin).pathname;
+      const method = init?.method ?? "GET";
+      const body = init?.body === undefined ? undefined : JSON.parse(String(init.body)) as Record<string, unknown>;
+      requests.push({ path, method, ...(body === undefined ? {} : { body }) });
+      if (path.endsWith("/payments/generate-scheduled")) return response({ created: 1, updated: 0, total: 1 });
+      if (path === "/api/loans/loan-1/payments") return response([payment]);
+      if (path === "/api/payments/payment-1" && method === "PUT") {
+        Object.assign(payment, body);
+        return response(payment);
+      }
+      if (path.startsWith("/api/loans/loan-1/")) return response([]);
+      return response({ error: { message: "Unexpected request" } }, 404);
+    }));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={queryClient}><LoanEntries loanId="loan-1" /></QueryClientProvider>);
+
+    expect(await screen.findByText("emi · scheduled")).toBeTruthy();
+    expect(requests.some((call) => call.path === "/api/loans/loan-1/payments/generate-scheduled" && call.method === "POST")).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Mark paid" }));
+    expect(screen.getByLabelText("Status")).toHaveProperty("value", "paid");
+    expect(screen.getByLabelText("Date")).toHaveProperty("value", new Date().toISOString().slice(0, 10));
+    await user.clear(screen.getByLabelText("Amount (₹)"));
+    await user.type(screen.getByLabelText("Amount (₹)"), "120.00");
+    await user.clear(screen.getByLabelText("Principal part (₹)"));
+    await user.type(screen.getByLabelText("Principal part (₹)"), "100.00");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(requests.some((call) => call.path === "/api/payments/payment-1" && call.method === "PUT")).toBe(true));
+    const update = requests.find((call) => call.path === "/api/payments/payment-1" && call.method === "PUT")!;
+    expect(update.body).toMatchObject({ status: "paid", amount: 12000, principalPart: 10000, interestPart: 2000 });
+  });
 });

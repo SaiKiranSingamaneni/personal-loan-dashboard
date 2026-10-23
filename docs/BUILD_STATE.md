@@ -5,7 +5,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
 - [x] P0-T2 Root scripts: `dev`, `build`, `test`, `lint`, `typecheck`, `verify` (typecheck + lint + test).
 - [x] P0-T3 Save this spec as `docs/SPEC.md`, create `docs/BUILD_STATE.md` from the template, README skeleton, `.gitignore` (including `data/`, `node_modules`, `.env`).
-- [ ] P1-T1 Money helpers (integer paise, rounding rule), date helpers (ISO dates, add months with day clamping), Indian number formatting.
+- [x] P1-T1 Money helpers (integer paise, rounding rule), date helpers (ISO dates, add months with day clamping), Indian number formatting.
 - [ ] P1-T2 EMI formula and base amortization schedule, with known-answer tests.
 - [ ] P1-T3 Apply recorded payments to the schedule: actual vs scheduled, outstanding balance as of any date.
 - [ ] P1-T4 Prepayments in both modes (reduce tenure, reduce EMI).
@@ -64,3 +64,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P0-T1 - Initialized the Git repository and npm workspaces, strict TypeScript configs, ESLint, Prettier, and Vitest; `npm run verify` passes - P0-T2 root scripts and P0-T3 README skeleton remained.
 - 2026-10-23 - P0-T2 - Added root dev and build scripts alongside the verification scripts - P0-T3 README skeleton and P0 phase gate remain.
 - 2026-10-23 - P0-T3 - Saved the complete spec and build tracker, added the README skeleton and data ignore rule; P0 gate checks pass - P1-T1 is next.
+- 2026-10-23 - P1-T1 - Added exact rupee-to-paise parsing, nearest-paisa rounding, Indian formatting and ISO date helpers with month clamping - P1-T2 EMI schedule remains.

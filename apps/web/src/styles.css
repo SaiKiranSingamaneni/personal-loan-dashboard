@@ -191,6 +191,22 @@ h1, h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; letter-spacin
 .placeholder-panel { margin-top: 24px; padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .placeholder-panel h2 { margin: 8px 0; font-size: 20px; }
 .placeholder-panel > p { max-width: 540px; margin-bottom: 24px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.activity-entry-form { display: grid; gap: 14px; margin: 20px 0; padding: 19px 20px; border: 1px solid var(--line); border-left: 4px solid #286c63; border-radius: 10px; background: var(--surface); }
+.activity-entry-form.is-editing { border-color: #bd8b51; border-left-color: #bd653e; background: color-mix(in srgb, #bd653e 4%, var(--surface)); }
+.activity-entry-form > header { display: flex; justify-content: space-between; gap: 12px; }
+.activity-entry-form h2 { margin: 3px 0 4px; font-size: 15px; }
+.activity-entry-form header p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.entry-form-kicker { color: #286c63; font-size: 8px; font-weight: 800; letter-spacing: .6px; }
+.activity-form-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 15px; }
+.activity-form-fields .form-field { font-size: 10px; }
+.activity-form-fields input, .activity-form-fields select, .activity-form-fields textarea { width: 100%; min-width: 0; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); font: 500 11px ui-sans-serif, system-ui, sans-serif; }
+.activity-form-fields textarea { resize: vertical; }
+.activity-form-title small { justify-self: end; color: var(--muted); font-size: 8px; font-weight: 400; }
+.activity-form-title .field-error, .activity-form-fields .field-error { justify-self: start; color: #b6413b; }
+.activity-form-title input[aria-invalid="true"], .activity-form-fields input[aria-invalid="true"] { border-color: #c95850; }
+.activity-form-notes { grid-column: 1 / -1; }
+.activity-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.activity-toast { display: inline-flex; width: fit-content; margin: 10px 0 0; padding: 8px 10px; border: 1px solid #b7d8cc; border-radius: 7px; background: #edf6f2; color: #286c63; font-size: 10px; }
 .entries-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 18px; margin-top: 24px; align-items: start; }
 .timeline-card { margin-top: 24px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
 .timeline-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px 0 18px; border-bottom: 1px solid var(--line); }

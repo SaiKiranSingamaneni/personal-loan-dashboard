@@ -90,7 +90,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] R-T3 API endpoints and integration tests.
 - [x] R-T4 Property cost editor in Loan details.
 - [x] R-T5 Dashboard: banner, KPI cards, both pies, progress bars, glossary and tooltips.
-- [ ] R-T6 Activity form with type-specific fields and the edit mode.
+- [x] R-T6 Activity form with type-specific fields and the edit mode.
 - [ ] R-T7 Activity table: filters, sort, scrolling, pagination, totals strip, delete and trash.
 - [ ] R-T8 Move existing charts to the Analysis tab, remove the old Timeline and per-entity forms, update the README.
 
@@ -98,6 +98,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [ ] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Session log
+- 2026-10-23 - R-T6 - Added type-specific unified Activity entry creation and editing, locked edit type, inline date/title/amount/rate validation, success toast, cancel, and scroll-to-edit behavior; `npm run verify` passes (103 tests) and the web build succeeds - R-T7 is next.
 - 2026-10-23 - R-T5 - Added plain-language loan summary, six compact-money KPIs, item/payer and loan pies, stacked funding/progress bars, definitions drawer, technical-term tooltips, and recent activity; `npm run verify` passes (101 tests) and the web build succeeds - R-T6 is next.
 - 2026-10-23 - R-T4 - Added grouped agreement/extra-cost editing with suggested/custom names, paise-safe amounts, subtotals, invoice mismatch warning, and stable component IDs; `npm run verify` passes (100 tests) and the web build succeeds - R-T5 is next.
 - 2026-10-23 - R-T3 - Added Activity, property, dashboard, auto-EMI restore, Trash and data-transfer API support; generated past EMIs run at startup, daily, and on input changes; `npm run verify` passes (98 tests) - R-T4 is next.

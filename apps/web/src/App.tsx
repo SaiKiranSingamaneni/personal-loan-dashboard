@@ -27,6 +27,7 @@ import { EmiCalculatorPage } from "./EmiCalculator.js";
 import { buildDueReminderSummary, localIsoToday } from "./dueReminders.js";
 import { DataManagementPage } from "./DataManagement.js";
 import { TrashPage } from "./TrashPage.js";
+import { ActivityEntryForm } from "./ActivityEntryForm.js";
 
 interface LoanListItem {
   id: string;
@@ -298,6 +299,7 @@ function LoanPage() {
         ) : null
       ) : tab === "activity" ? (
         <>
+          <ActivityEntryForm loanId={loan.id} />
           <LoanTimeline loanId={loan.id} />
           <LoanEntries loanId={loan.id} />
         </>

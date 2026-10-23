@@ -15,6 +15,11 @@ export interface PaymentBreakdownInput {
   interestMethod?: InterestMethod;
   preEmiInterestOnly?: boolean;
   emiOverride?: Paise | null;
+  rateChanges?: readonly {
+    effectiveDate: IsoDate;
+    annualRatePercent: number;
+    option: "KEEP_EMI_CHANGE_TENURE" | "KEEP_TENURE_CHANGE_EMI";
+  }[];
 }
 export interface PaymentBreakdownRow {
   date: IsoDate;
@@ -40,8 +45,16 @@ function calendarMonthsBetween(from: IsoDate, to: IsoDate): number {
 export function calculatePaymentBreakdown(input: PaymentBreakdownInput): PaymentBreakdownRow[] {
   const events = [
     ...input.disbursements.map((item, index) => ({ ...item, kind: "disbursement" as const, index })),
+    ...(input.rateChanges ?? []).map((item, index) => ({
+      date: item.effectiveDate,
+      amount: asPaise(0),
+      kind: "rate-change" as const,
+      index,
+      annualRatePercent: item.annualRatePercent,
+      option: item.option,
+    })),
     ...input.payments.map((item, index) => ({ ...item, kind: "payment" as const, index })),
-  ].sort((a, b) => a.date.localeCompare(b.date) || (a.kind === b.kind ? a.index - b.index : a.kind === "disbursement" ? -1 : 1));
+  ].sort((a, b) => a.date.localeCompare(b.date) || eventOrder(a.kind) - eventOrder(b.kind) || a.index - b.index);
   let principal = 0;
   let unpaidInterest = 0;
   let lastDate = events[0]?.date ?? asIsoDate("1970-01-01");
@@ -49,11 +62,29 @@ export function calculatePaymentBreakdown(input: PaymentBreakdownInput): Payment
   let disbursementCount = 0;
   const results: PaymentBreakdownRow[] = [];
   const daily = (input.interestMethod ?? "DAILY") === "DAILY";
-  const monthlyRate = input.annualRatePercent / 1200;
+  let annualRatePercent = input.annualRatePercent;
+  let lastEmiAmount: Paise | null = null;
+  let fixedEmiAmount: Paise | null = null;
 
   for (const event of events) {
     if (daily && event.date > lastDate) {
-      accrued += principal * (input.annualRatePercent / 100) * dateDays(lastDate, event.date) / 365;
+      accrued += principal * (annualRatePercent / 100) * dateDays(lastDate, event.date) / 365;
+    }
+    if (event.kind === "rate-change") {
+      const firstDisbursement = input.disbursements.map((item) => item.date).sort()[0] ?? event.date;
+      const elapsedMonths = calendarMonthsBetween(firstDisbursement, event.date);
+      const remainingMonths = Math.max(1, input.tenureMonths - elapsedMonths + 1);
+      if (event.option === "KEEP_EMI_CHANGE_TENURE") {
+        const emiPrincipal = input.emiBasis === "SANCTIONED" ? input.sanctionedAmount : asPaise(principal);
+        fixedEmiAmount = lastEmiAmount ?? (input.emiBasis === "SANCTIONED" && input.emiOverride != null
+          ? input.emiOverride
+          : emiPrincipal > 0 ? calculateEmi(emiPrincipal, annualRatePercent, remainingMonths) : null);
+      } else {
+        fixedEmiAmount = null;
+      }
+      annualRatePercent = event.annualRatePercent;
+      lastDate = event.date;
+      continue;
     }
     if (event.kind === "disbursement") {
       principal += event.amount;
@@ -61,7 +92,7 @@ export function calculatePaymentBreakdown(input: PaymentBreakdownInput): Payment
       lastDate = event.date;
       continue;
     }
-    const interestDue = roundToPaise(accrued + unpaidInterest + (!daily ? principal * monthlyRate : 0));
+    const interestDue = roundToPaise(accrued + unpaidInterest + (!daily ? principal * annualRatePercent / 1200 : 0));
     const interestPart = asPaise(Math.min(event.amount, interestDue));
     const principalPart = asPaise(event.amount - interestPart);
     unpaidInterest = Math.max(0, interestDue - interestPart);
@@ -71,9 +102,10 @@ export function calculatePaymentBreakdown(input: PaymentBreakdownInput): Payment
     const elapsedMonths = calendarMonthsBetween(firstDisbursement, event.date);
     const remainingMonths = Math.max(1, input.tenureMonths - elapsedMonths + 1);
     const emiPrincipal = input.emiBasis === "SANCTIONED" ? input.sanctionedAmount : asPaise(principal + principalPart);
-    const emiAmount = input.emiBasis === "SANCTIONED" && input.emiOverride != null
+    const calculatedEmiAmount = input.emiBasis === "SANCTIONED" && input.emiOverride != null
       ? input.emiOverride
-      : calculateEmi(emiPrincipal, input.annualRatePercent, input.emiBasis === "SANCTIONED" ? input.tenureMonths : remainingMonths);
+      : calculateEmi(emiPrincipal, annualRatePercent, input.emiBasis === "SANCTIONED" ? input.tenureMonths : remainingMonths);
+    const emiAmount: Paise = fixedEmiAmount ?? calculatedEmiAmount;
     const preEmi = input.preEmiInterestOnly === true && principal < input.sanctionedAmount && disbursementCount > 0;
     results.push({
       date: event.date, amount: event.amount, interestPart, principalPart,
@@ -81,9 +113,14 @@ export function calculatePaymentBreakdown(input: PaymentBreakdownInput): Payment
       emiAmount: preEmi ? asPaise(interestDue) : emiAmount,
       warning: unpaidInterest > 0 ? "Payment is below accrued interest; unpaid interest is carried forward." : null,
     });
+    lastEmiAmount = emiAmount;
     lastDate = event.date;
   }
   return results;
+}
+
+function eventOrder(kind: "disbursement" | "rate-change" | "payment"): number {
+  return kind === "disbursement" ? 0 : kind === "rate-change" ? 1 : 2;
 }
 
 export function calculateEmiAtDisbursement(

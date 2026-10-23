@@ -61,4 +61,32 @@ describe("payment breakdown", () => {
     expect(rows[0]?.emiAmount).toBeGreaterThanOrEqual(8_076_900);
     expect(rows[0]?.emiAmount).toBeLessThanOrEqual(8_077_600);
   });
+
+  it("applies effective-dated rate changes while preserving the selected repayment option", () => {
+    const common = {
+      ...input,
+      sanctionedAmount: asPaise(1_000_000),
+      annualRatePercent: 8,
+      tenureMonths: 24,
+      emiBasis: "DISBURSED" as const,
+      disbursements: [{ date: asIsoDate("2025-01-01"), amount: asPaise(1_000_000) }],
+      payments: [
+        { date: asIsoDate("2025-02-01"), amount: asPaise(50_000) },
+        { date: asIsoDate("2025-03-01"), amount: asPaise(50_000) },
+      ],
+      rateChanges: [{
+        effectiveDate: asIsoDate("2025-03-01"),
+        annualRatePercent: 12,
+        option: "KEEP_EMI_CHANGE_TENURE" as const,
+      }],
+    };
+    const keepEmi = calculatePaymentBreakdown(common);
+    const keepTenure = calculatePaymentBreakdown({
+      ...common,
+      rateChanges: [{ ...common.rateChanges[0]!, option: "KEEP_TENURE_CHANGE_EMI" }],
+    });
+    expect(keepEmi[1]?.emiAmount).toBe(keepEmi[0]?.emiAmount);
+    expect(keepTenure[1]?.emiAmount).toBeGreaterThan(keepTenure[0]!.emiAmount);
+    expect(keepEmi[1]?.interestPart).toBeGreaterThan(keepEmi[0]!.interestPart);
+  });
 });

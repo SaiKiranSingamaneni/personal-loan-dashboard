@@ -68,6 +68,34 @@ describe("loan REST endpoints", () => {
     expect((await request(app).get(`/api/loans/${id}`)).status).toBe(200);
   });
 
+  it("saves initial funding entries atomically on create and updates their totals", async () => {
+    const created = await request(app).post("/api/loans").send({
+      ...validLoan,
+      initialOwnContribution: 2_000_000,
+      initialLoanUtilized: 6_000_000,
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.id as string;
+    expect((await request(app).get(`/api/loans/${id}/contributions`)).body[0].amount).toBe(
+      2_000_000,
+    );
+    expect((await request(app).get(`/api/loans/${id}/disbursements`)).body[0].amount).toBe(
+      6_000_000,
+    );
+    const updated = await request(app).put(`/api/loans/${id}`).send({
+      initialOwnContribution: 2_500_000,
+      initialLoanUtilized: 6_500_000,
+    });
+    expect(updated.status).toBe(200);
+    expect((await request(app).get(`/api/loans/${id}/contributions`)).body).toHaveLength(1);
+    expect((await request(app).get(`/api/loans/${id}/contributions`)).body[0].amount).toBe(
+      2_500_000,
+    );
+    expect((await request(app).get(`/api/loans/${id}/disbursements`)).body[0].amount).toBe(
+      6_500_000,
+    );
+  });
+
   it("returns a full amortization schedule and derived summary", async () => {
     const created = await request(app).post("/api/loans").send(validLoan);
     const id = created.body.id as string;

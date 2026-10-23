@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
+import { LoanFormPage } from "./LoanForm.js";
 
 interface LoanListItem {
   id: string;
@@ -60,10 +61,9 @@ function EmptyLoans() {
       <div className="empty-icon" aria-hidden="true">₹</div>
       <h1>Start with a loan</h1>
       <p>Your loans, payment history, and plans will stay on this device.</p>
-      <button className="button button-primary" disabled>
+      <Link className="button button-primary" to="/loans/new">
         Add your first loan
-      </button>
-      <span className="muted-note">Loan setup is coming in the next step.</span>
+      </Link>
     </section>
   );
 }
@@ -88,6 +88,7 @@ function AppShell() {
     const parts = location.pathname.split("/");
     return parts[1] === "loans" ? parts[2] : undefined;
   }, [location.pathname]);
+  const isFormRoute = /^\/loans\/(new|[^/]+\/edit)$/.test(location.pathname);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -142,6 +143,7 @@ function AppShell() {
             );
           })}
         </nav>
+        <Link className="add-loan-link" to="/loans/new"><span aria-hidden="true">+</span> Add loan</Link>
         {loans.length === 0 && (
           <p className="sidebar-empty">Your loan list will appear here.</p>
         )}
@@ -168,7 +170,7 @@ function AppShell() {
           <div className="topbar-right"><span className="local-badge"><span /> Local only</span></div>
         </header>
         <div className="content-area">
-          {loans.length === 0 ? (
+          {loans.length === 0 && !isFormRoute ? (
             <EmptyLoans />
           ) : (
             <Outlet context={{ loans }} />
@@ -206,7 +208,10 @@ function LoanPage() {
           <h1>{loan.name}</h1>
           <p>Track your balance, payments, and funding in one place.</p>
         </div>
-        <span className={`status-pill status-pill-${loan.status}`}>{loan.status}</span>
+        <div className="heading-actions">
+          <Link className="button button-secondary" to={`/loans/${loan.id}/edit${location.search}`}>Edit loan</Link>
+          <span className={`status-pill status-pill-${loan.status}`}>{loan.status}</span>
+        </div>
       </div>
       <div className="tabs" role="tablist" aria-label="Loan sections">
         {[
@@ -248,4 +253,6 @@ export function App() {
 export function LoanRoute() {
   return <LoanPage />;
 }
+
+export { LoanFormPage };
 

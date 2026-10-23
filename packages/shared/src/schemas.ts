@@ -33,6 +33,11 @@ const loanFieldsSchema = z.object({
     emiStartDate: isoDateSchema.nullable().optional(),
 }).strict();
 
+const initialFundingFieldsSchema = z.object({
+  initialOwnContribution: z.number().int().nonnegative().safe().default(0),
+  initialLoanUtilized: z.number().int().nonnegative().safe().default(0),
+}).strict();
+
 function validateEmiStartRule(
   loan: { emiStartRule?: "full-disbursement" | "date"; emiStartDate?: string | null },
   context: z.RefinementCtx,
@@ -46,10 +51,22 @@ function validateEmiStartRule(
     }
 }
 
-export const loanCreateSchema = loanFieldsSchema.superRefine(validateEmiStartRule);
+export const loanCreateSchema = loanFieldsSchema
+  .extend(initialFundingFieldsSchema.shape)
+  .strict()
+  .superRefine(validateEmiStartRule);
 
 export const loanUpdateSchema = loanFieldsSchema
   .partial()
+  .strict()
+  .superRefine(validateEmiStartRule);
+
+export const loanEditSchema = loanFieldsSchema
+  .partial()
+  .extend({
+    initialOwnContribution: z.number().int().nonnegative().safe().optional(),
+    initialLoanUtilized: z.number().int().nonnegative().safe().optional(),
+  })
   .strict()
   .superRefine(validateEmiStartRule);
 
@@ -164,3 +181,4 @@ export const isoDateInputSchema = isoDateSchema;
 
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;
 export type LoanUpdateInput = z.infer<typeof loanUpdateSchema>;
+export type LoanEditInput = z.infer<typeof loanEditSchema>;

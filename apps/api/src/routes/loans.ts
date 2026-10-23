@@ -8,10 +8,10 @@ import {
   createScheduleWithFixedEmi,
   createStagedDisbursementSchedule,
   loanCreateSchema,
-  loanUpdateSchema,
+  loanEditSchema,
   summarizeLoan,
 } from "@loan-dashboard/shared";
-import type { LoanCreateInput, LoanUpdateInput } from "@loan-dashboard/shared";
+import type { LoanCreateInput, LoanEditInput } from "@loan-dashboard/shared";
 import { HttpError } from "../http/errors.js";
 import { validateBody } from "../http/validation.js";
 import type { RepositorySet } from "../db/repositories.js";
@@ -105,15 +105,22 @@ function loanSchedule(repositories: RepositorySet, loanId: string) {
 }
 
 function createLoanRecord(input: LoanCreateInput, now: string) {
+  const {
+    initialOwnContribution: _initialOwnContribution,
+    initialLoanUtilized: _initialLoanUtilized,
+    ...loanInput
+  } = input;
+  void _initialOwnContribution;
+  void _initialLoanUtilized;
   return {
     id: randomUUID(),
-    ...input,
-    accountReference: input.accountReference ?? null,
-    emiOverride: input.emiOverride ?? null,
-    processingFee: input.processingFee ?? null,
-    otherCharges: input.otherCharges ?? null,
-    propertyCost: input.propertyCost ?? null,
-    emiStartDate: input.emiStartDate ?? null,
+    ...loanInput,
+    accountReference: loanInput.accountReference ?? null,
+    emiOverride: loanInput.emiOverride ?? null,
+    processingFee: loanInput.processingFee ?? null,
+    otherCharges: loanInput.otherCharges ?? null,
+    propertyCost: loanInput.propertyCost ?? null,
+    emiStartDate: loanInput.emiStartDate ?? null,
     archivedAt: null,
     deletedAt: null,
     createdAt: now,
@@ -131,7 +138,34 @@ export function createLoansRouter(repositories: RepositorySet): Router {
   router.post("/", validateBody(loanCreateSchema), (request, response) => {
     const input = request.body as LoanCreateInput;
     const now = new Date().toISOString();
-    const loan = repositories.loans.create(createLoanRecord(input, now));
+    const loan = repositories.transaction(() => {
+      const created = repositories.loans.create(createLoanRecord(input, now));
+      if (input.initialOwnContribution > 0) {
+        repositories.children.contributions.create({
+          id: randomUUID(),
+          loanId: created.id,
+          date: created.startDate,
+          amount: input.initialOwnContribution,
+          note: "Initial own contribution",
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      if (input.initialLoanUtilized > 0) {
+        repositories.children.disbursements.create({
+          id: randomUUID(),
+          loanId: created.id,
+          date: created.startDate,
+          amount: input.initialLoanUtilized,
+          note: "Initial loan utilization",
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      return created;
+    });
     response.status(201).json(loan);
   });
 
@@ -190,13 +224,56 @@ export function createLoansRouter(repositories: RepositorySet): Router {
     response.json(getLoan(repositories, routeId(request)));
   });
 
-  router.put("/:id", validateBody(loanUpdateSchema), (request, response) => {
+  router.put("/:id", validateBody(loanEditSchema), (request, response) => {
     const id = routeId(request);
-    getLoan(repositories, id);
-    const input = request.body as LoanUpdateInput;
-    const updated = repositories.loans.update(id, {
-      ...input,
-      updatedAt: new Date().toISOString(),
+    const loan = getLoan(repositories, id);
+    const input = request.body as LoanEditInput;
+    const {
+      initialOwnContribution,
+      initialLoanUtilized,
+      ...loanFields
+    } = input;
+    const now = new Date().toISOString();
+    const updated = repositories.transaction(() => {
+      const updatedLoan = repositories.loans.update(id, {
+        ...loanFields,
+        updatedAt: now,
+      });
+      if (initialOwnContribution !== undefined) {
+        for (const item of repositories.children.contributions.listByLoan(id)) {
+          repositories.children.contributions.softDelete(item.id, now);
+        }
+        if (initialOwnContribution > 0) {
+          repositories.children.contributions.create({
+            id: randomUUID(),
+            loanId: id,
+            date: loanFields.startDate ?? loan.startDate,
+            amount: initialOwnContribution,
+            note: "Updated own contribution total",
+            deletedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+      if (initialLoanUtilized !== undefined) {
+        for (const item of repositories.children.disbursements.listByLoan(id)) {
+          repositories.children.disbursements.softDelete(item.id, now);
+        }
+        if (initialLoanUtilized > 0) {
+          repositories.children.disbursements.create({
+            id: randomUUID(),
+            loanId: id,
+            date: loanFields.startDate ?? loan.startDate,
+            amount: initialLoanUtilized,
+            note: "Updated loan utilization total",
+            deletedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+      return updatedLoan;
     });
     if (updated === undefined) {
       throw new HttpError(404, "LOAN_NOT_FOUND", "Loan was not found.");

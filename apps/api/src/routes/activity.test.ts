@@ -102,6 +102,8 @@ describe("Activity and property APIs", () => {
     expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
     expect(response.body.items[0].title).toBe("March installment");
     expect(response.body.totals.emisPaid).toBe(5_000);
+    expect(response.body.items[0].interestPart).toBeGreaterThan(0);
+    expect(response.body.items[0].principalPart).toBeGreaterThan(0);
 
     const newest = await request(app).get(`/api/loans/${loanId}/activity?from=2026-01-01&to=2026-04-01&sort=newest&page=1&pageSize=10`).expect(200);
     expect(newest.body.items[0].title).toBe("Bonus payment");

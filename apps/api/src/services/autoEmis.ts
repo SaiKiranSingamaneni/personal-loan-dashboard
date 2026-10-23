@@ -1,4 +1,11 @@
-import { addMonths, asIsoDate, asPaise, reconcileAutoEmis, type ActivityRecord } from "@loan-dashboard/shared";
+import {
+  addMonths,
+  asIsoDate,
+  asPaise,
+  calculatePaymentBreakdown,
+  reconcileAutoEmis,
+  type ActivityRecord,
+} from "@loan-dashboard/shared";
 import type { RepositorySet } from "../db/repositories.js";
 
 function today(): ReturnType<typeof asIsoDate> {
@@ -90,7 +97,52 @@ export function reconcileLoanAutoEmis(repositories: RepositorySet, loanId: strin
       }
     }
   });
+  recalculateActivityPaymentSplits(repositories, loanId);
   return { created, updated };
+}
+
+function recalculateActivityPaymentSplits(repositories: RepositorySet, loanId: string): void {
+  const loan = repositories.loans.getById(loanId);
+  if (loan === undefined) return;
+  const entries = repositories.children.activityEntries.listByLoan(loanId);
+  const payments = entries
+    .filter((entry) => (entry.type === "EMI" || entry.type === "EXTRA_EMI") && entry.amount !== null && entry.status === "PAID")
+    .sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id));
+  if (payments.length === 0) return;
+  const disbursements = entries
+    .filter((entry) => entry.type === "LOAN_DISBURSEMENT" && entry.amount !== null)
+    .map((entry) => ({ date: asIsoDate(entry.date), amount: asPaise(entry.amount!) }));
+  const rateChanges = entries
+    .filter((entry) => entry.type === "RATE_CHANGE" && entry.newRatePercent !== null && entry.effectiveDate !== null)
+    .map((entry) => ({
+      effectiveDate: asIsoDate(entry.effectiveDate!),
+      annualRatePercent: entry.newRatePercent!,
+      option: entry.rateOption ?? "KEEP_EMI_CHANGE_TENURE",
+    }));
+  const rows = calculatePaymentBreakdown({
+    sanctionedAmount: asPaise(loan.sanctionedAmount),
+    annualRatePercent: loan.annualRatePercent,
+    tenureMonths: loan.tenureMonths,
+    emiBasis: loan.emiBasis,
+    interestMethod: loan.interestMethod,
+    preEmiInterestOnly: loan.preEmiInterestOnly,
+    emiOverride: loan.emiOverride == null ? null : asPaise(loan.emiOverride),
+    disbursements,
+    payments: payments.map((entry) => ({ date: asIsoDate(entry.date), amount: asPaise(entry.amount!) })),
+    rateChanges,
+  });
+  const now = new Date().toISOString();
+  repositories.transaction(() => {
+    payments.forEach((entry, index) => {
+      const row = rows[index];
+      if (row === undefined) return;
+      repositories.children.activityEntries.update(entry.id, {
+        interestPart: row.interestPart,
+        principalPart: row.principalPart,
+        updatedAt: now,
+      });
+    });
+  });
 }
 
 export function reconcileAllLoanAutoEmis(repositories: RepositorySet): void {

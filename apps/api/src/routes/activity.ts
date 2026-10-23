@@ -145,9 +145,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       interestPart: null, principalPart: null,
       createdAt: now, updatedAt: now,
     });
-    if (input.type === "LOAN_DISBURSEMENT" || input.type === "RATE_CHANGE") {
-      reconcileLoanAutoEmis(repositories, loanId);
-    }
+    reconcileLoanAutoEmis(repositories, loanId);
     response.status(201).json(record);
   });
 
@@ -191,6 +189,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       principalPart: existing.principalPart,
       updatedAt: now,
     });
+    reconcileLoanAutoEmis(repositories, existing.loanId);
     response.json(updated);
   });
 

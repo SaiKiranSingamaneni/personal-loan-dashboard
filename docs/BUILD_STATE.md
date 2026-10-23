@@ -1,10 +1,10 @@
 # Build state
-Current task: P0-T3 - Last updated: 2026-10-23
+Current task: P1-T1 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
 - [x] P0-T2 Root scripts: `dev`, `build`, `test`, `lint`, `typecheck`, `verify` (typecheck + lint + test).
-- [ ] P0-T3 Save this spec as `docs/SPEC.md`, create `docs/BUILD_STATE.md` from the template, README skeleton, `.gitignore` (including `data/`, `node_modules`, `.env`).
+- [x] P0-T3 Save this spec as `docs/SPEC.md`, create `docs/BUILD_STATE.md` from the template, README skeleton, `.gitignore` (including `data/`, `node_modules`, `.env`).
 - [ ] P1-T1 Money helpers (integer paise, rounding rule), date helpers (ISO dates, add months with day clamping), Indian number formatting.
 - [ ] P1-T2 EMI formula and base amortization schedule, with known-answer tests.
 - [ ] P1-T3 Apply recorded payments to the schedule: actual vs scheduled, outstanding balance as of any date.
@@ -44,7 +44,7 @@ Current task: P0-T3 - Last updated: 2026-10-23
 - [ ] P8-T3 Walk through every item in section 10, record the result in `docs/BUILD_STATE.md`, fix failures.
 
 ## Phase gates
-- [ ] P0 - `npm run verify` passes on the empty workspaces.
+- [x] P0 - `npm run verify` passes on the empty workspaces.
 - [ ] P1 - Engine tests pass; invariants hold; engine coverage is at least 90%.
 - [ ] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
 - [ ] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
@@ -61,5 +61,6 @@ Current task: P0-T3 - Last updated: 2026-10-23
 - none
 
 ## Session log
-- 2026-10-23 - P0-T1 - Initialized the Git repository and npm workspaces, strict TypeScript configs, ESLint, Prettier, and Vitest; `npm run verify` passes - P0-T2 root scripts and P0-T3 README skeleton remain.
+- 2026-10-23 - P0-T1 - Initialized the Git repository and npm workspaces, strict TypeScript configs, ESLint, Prettier, and Vitest; `npm run verify` passes - P0-T2 root scripts and P0-T3 README skeleton remained.
 - 2026-10-23 - P0-T2 - Added root dev and build scripts alongside the verification scripts - P0-T3 README skeleton and P0 phase gate remain.
+- 2026-10-23 - P0-T3 - Saved the complete spec and build tracker, added the README skeleton and data ignore rule; P0 gate checks pass - P1-T1 is next.

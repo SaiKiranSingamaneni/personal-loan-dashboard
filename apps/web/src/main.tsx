@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AllLoansOverview, App, DataManagementPage, EmiCalculatorPage, LoanFormPage, LoanRoute } from "./App.js";
+import { AllLoansOverview, App, DataManagementPage, EmiCalculatorPage, LoanFormPage, LoanRoute, TrashPage } from "./App.js";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -26,6 +26,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="loans/:loanId" element={<LoanRoute />} />
             <Route path="calculator" element={<EmiCalculatorPage />} />
             <Route path="data" element={<DataManagementPage />} />
+            <Route path="trash" element={<TrashPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

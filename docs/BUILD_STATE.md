@@ -1,5 +1,5 @@
 # Build state
-Current task: P7-T2 - Last updated: 2026-10-23
+Current task: P7-T3 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -36,7 +36,7 @@ Current task: P7-T2 - Last updated: 2026-10-23
 - [x] P6-T2 What-if simulator UI with Apply, and the standalone EMI calculator.
 - [x] P6-T3 In-app due reminders (7-day banner, overdue count in the sidebar).
 - [x] P7-T1 Export/import UI with validation preview, per-loan CSV export.
-- [ ] P7-T2 Trash view with restore and permanent delete.
+- [x] P7-T2 Trash view with restore and permanent delete.
 - [ ] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
 - [ ] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
 - [ ] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
@@ -74,6 +74,7 @@ Current task: P7-T2 - Last updated: 2026-10-23
 - 2026-10-23 - Persist an applied what-if as payment or rate-change records inside one repository transaction - ensures recurring plans are all-or-nothing and all applied scenarios remain editable in the loan history.
 - 2026-10-23 - Derive 7-day reminders and overdue counts from each loan's schedule - makes reminders available on every route even before Activity has generated payment records.
 - 2026-10-23 - Define the versioned JSON export schema in the shared package for both browser preflight and API validation - ensures import preview uses the same record rules as the server.
+- 2026-10-23 - Sort Trash newest-deleted first and require both browser confirmation and the API's `DELETE` token before hard deletion - keeps recovery actions visible and permanent removal deliberate.
 
 ## Blockers
 - none
@@ -119,3 +120,4 @@ Current task: P7-T2 - Last updated: 2026-10-23
 - 2026-10-23 - P6-T3 - Added the next-seven-days due banner and sidebar overdue count using schedule status and local date boundaries; 77 tests pass and production build succeeds - P6 totals gate passes; P7-T1 data export/import UI is next.
 - 2026-10-23 - P6 gate - Verified overview totals against individual loan summaries and completed planning tools and due reminders; full verification passes (77 tests) and production build succeeds - P7-T1 is next.
 - 2026-10-23 - P7-T1 - Added Data and backups page for JSON export, shared-schema validation preview, confirmed overwrite, manual backup, and payment CSV export; amortization CSV is available in Schedule; 79 tests pass and production build succeeds - P7-T2 Trash view remains.
+- 2026-10-23 - P7-T2 - Added a Trash page listing deleted loans and entries with restore and confirmed permanent-delete actions; 80 tests pass and production build succeeds - P7-T3 accessibility/theme/tablet review remains.

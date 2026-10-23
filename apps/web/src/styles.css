@@ -84,6 +84,27 @@ a { color: inherit; text-decoration: none; }
 .import-preview > span { color: var(--text); font-size: 11px; }
 .import-preview > small { color: var(--muted); font-size: 10px; }
 .import-preview .button { justify-self: start; margin-top: 4px; }
+.trash-page { display: grid; gap: 18px; }
+.trash-list-card { padding: 12px 18px; }
+.trash-list { display: grid; gap: 0; padding: 0; margin: 0; list-style: none; }
+.trash-list li { display: grid; grid-template-columns: 94px minmax(0, 1fr) auto; gap: 10px 14px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
+.trash-list li:last-child { border-bottom: 0; }
+.trash-type { justify-self: start; padding: 5px 8px; border-radius: 7px; background: var(--surface-soft); color: var(--muted); font-size: 9px; font-weight: 700; }
+.trash-type-loan { background: #e9efff; color: #3559c7; }
+.trash-type-payment { background: #e1f2e9; color: #28724f; }
+.trash-type-note { background: #f1eafa; color: #70449e; }
+.trash-record-copy { display: grid; gap: 4px; min-width: 0; }
+.trash-record-copy strong { overflow-wrap: anywhere; color: var(--text); font-size: 11px; }
+.trash-record-copy span { color: var(--muted); font-size: 9px; }
+.trash-amount { color: var(--text); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.trash-actions { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 7px; }
+.trash-empty { display: grid; justify-items: center; gap: 8px; padding: 40px 20px; text-align: center; }
+.trash-empty > span { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: var(--surface-soft); color: var(--muted); font-size: 19px; }
+.trash-empty strong { color: var(--text); font-size: 14px; }
+.trash-empty p { margin: 0; color: var(--muted); font-size: 11px; }
+html[data-theme="dark"] .trash-type-loan { background: #29385a; color: #b4c2ff; }
+html[data-theme="dark"] .trash-type-payment { background: #234435; color: #88d4ae; }
+html[data-theme="dark"] .trash-type-note { background: #382748; color: #d0b2ee; }
 .sidebar-bottom { display: grid; gap: 13px; margin-top: auto; }
 .privacy-card { display: flex; align-items: center; gap: 10px; padding: 12px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .privacy-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #eaf5f0; color: #39836b; }

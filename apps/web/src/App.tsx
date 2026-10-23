@@ -24,6 +24,7 @@ import { WhatIfSimulator } from "./WhatIfSimulator.js";
 import { EmiCalculatorPage } from "./EmiCalculator.js";
 import { buildDueReminderSummary, localIsoToday } from "./dueReminders.js";
 import { DataManagementPage } from "./DataManagement.js";
+import { TrashPage } from "./TrashPage.js";
 
 interface LoanListItem {
   id: string;
@@ -178,6 +179,7 @@ function AppShell() {
         <Link className="add-loan-link" to="/loans/new"><span aria-hidden="true">+</span> Add loan</Link>
         <NavLink to="/calculator" className={({ isActive }) => `calculator-link${isActive ? " is-active" : ""}`}>EMI calculator</NavLink>
         <NavLink to="/data" className={({ isActive }) => `calculator-link${isActive ? " is-active" : ""}`}>Data and backups</NavLink>
+        <NavLink to="/trash" className={({ isActive }) => `calculator-link${isActive ? " is-active" : ""}`}>Trash</NavLink>
         {loans.length === 0 && (
           <p className="sidebar-empty">Your loan list will appear here.</p>
         )}
@@ -208,7 +210,7 @@ function AppShell() {
           <ul>{reminderSummary.upcoming.map((item) => <li key={`${item.loanId}-${item.date}`}><Link to={`/loans/${item.loanId}?tab=activity`}><span>{item.loanName} · {item.date}</span><strong>{formatIndianMoney(asPaise(item.amount))}</strong></Link></li>)}</ul>
         </section>}
         <div className="content-area">
-          {loans.length === 0 && !isFormRoute && location.pathname !== "/calculator" && location.pathname !== "/data" ? (
+          {loans.length === 0 && !isFormRoute && location.pathname !== "/calculator" && location.pathname !== "/data" && location.pathname !== "/trash" ? (
             <EmptyLoans />
           ) : (
             <Outlet context={{ loans }} />
@@ -320,5 +322,5 @@ export function LoanRoute() {
   return <LoanPage />;
 }
 
-export { AllLoansOverview, DataManagementPage, EmiCalculatorPage, LoanFormPage };
+export { AllLoansOverview, DataManagementPage, EmiCalculatorPage, LoanFormPage, TrashPage };
 

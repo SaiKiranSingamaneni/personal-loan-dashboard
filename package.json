@@ -9,6 +9,8 @@
     "packages/shared"
   ],
   "scripts": {
+    "dev": "concurrently -k \"npm run dev --workspace @loan-dashboard/api\" \"npm run dev --workspace @loan-dashboard/web\"",
+    "build": "tsc --build && npm run build --workspaces --if-present",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "typecheck": "tsc --build",
     "lint": "eslint .",
@@ -16,6 +18,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "concurrently": "^9.1.2",
     "eslint": "^9.19.0",
     "globals": "^15.14.0",
     "prettier": "^3.5.0",

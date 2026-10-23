@@ -148,4 +148,32 @@ describe("loan REST endpoints", () => {
       amount: 999_999_999,
     });
   });
+
+  it("applies simulated one-time, recurring, and rate-change plans as loan entries", async () => {
+    const created = await request(app).post("/api/loans").send(validLoan);
+    const id = created.body.id as string;
+    const first = await request(app).post(`/api/loans/${id}/apply-simulation`).send({
+      type: "prepayment", amount: 100_000, date: "2026-11-05", mode: "reduce-tenure",
+    });
+    expect(first.status).toBe(201);
+    expect(first.body.applied).toBe(1);
+
+    const recurring = await request(app).post(`/api/loans/${id}/apply-simulation`).send({
+      type: "recurring-prepayment", amount: 200_000, firstDate: "2026-12-05",
+      intervalMonths: 3, count: 2, mode: "reduce-emi",
+    });
+    expect(recurring.status).toBe(201);
+    expect(recurring.body.applied).toBe(2);
+    const payments = (await request(app).get(`/api/loans/${id}/payments`)).body as { date: string; prepaymentMode: string }[];
+    expect(payments.map((payment) => payment.date).sort()).toEqual(["2026-11-05", "2026-12-05", "2027-03-05"]);
+    expect(payments.every((payment) => payment.prepaymentMode !== null)).toBe(true);
+
+    const reset = await request(app).post(`/api/loans/${id}/apply-simulation`).send({
+      type: "rate-change", changes: [{ effectiveDate: "2027-04-05", annualRatePercent: 9, mode: "keep-tenure" }],
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.applied).toBe(1);
+    expect((await request(app).get(`/api/loans/${id}/rate-changes`)).body[0].annualRatePercent).toBe(9);
+    expect((await request(app).post(`/api/loans/${id}/apply-simulation`).send({ type: "prepayment", amount: 0 })).status).toBe(400);
+  });
 });

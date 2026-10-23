@@ -10,10 +10,13 @@ import {
   loanCreateSchema,
   loanEditSchema,
   summarizeLoan,
+  simulationScenarioSchema,
+  type SimulationScenarioInput,
 } from "@loan-dashboard/shared";
 import type { LoanCreateInput, LoanEditInput } from "@loan-dashboard/shared";
 import { HttpError } from "../http/errors.js";
 import { validateBody } from "../http/validation.js";
+import { parseInput } from "../http/validation.js";
 import type { RepositorySet } from "../db/repositories.js";
 import { getTimeline } from "./timeline.js";
 
@@ -182,6 +185,38 @@ export function createLoansRouter(repositories: RepositorySet): Router {
       }
     });
     response.json({ created, updated, total: schedule.length });
+  });
+
+  router.post("/:id/apply-simulation", validateBody(simulationScenarioSchema), (request, response) => {
+    const id = routeId(request);
+    getLoan(repositories, id);
+    const scenario = parseInput(simulationScenarioSchema, request.body) as SimulationScenarioInput;
+    const now = new Date().toISOString();
+    const applied = repositories.transaction(() => {
+      if (scenario.type === "prepayment") {
+        return [repositories.children.payments.create({
+          id: randomUUID(), loanId: id, date: scenario.date, amount: scenario.amount,
+          type: "prepayment", principalPart: scenario.amount, interestPart: 0,
+          status: "paid", scheduledPeriod: null, prepaymentMode: scenario.mode,
+          note: "Applied from what-if simulator", deletedAt: null, createdAt: now, updatedAt: now,
+        })];
+      }
+      if (scenario.type === "recurring-prepayment") {
+        return Array.from({ length: scenario.count }, (_value, index) => {
+          const date = addMonths(asIsoDate(scenario.firstDate), index * scenario.intervalMonths);
+          return repositories.children.payments.create({
+            id: randomUUID(), loanId: id, date, amount: scenario.amount,
+            type: "prepayment", principalPart: scenario.amount, interestPart: 0,
+            status: "paid", scheduledPeriod: null, prepaymentMode: scenario.mode,
+            note: "Recurring prepayment from what-if simulator", deletedAt: null, createdAt: now, updatedAt: now,
+          });
+        });
+      }
+      return scenario.changes.map((change) => repositories.children.rateChanges.create({
+        id: randomUUID(), loanId: id, ...change, deletedAt: null, createdAt: now, updatedAt: now,
+      }));
+    });
+    response.status(201).json({ applied: applied.length, entries: applied });
   });
 
   router.post("/", validateBody(loanCreateSchema), (request, response) => {

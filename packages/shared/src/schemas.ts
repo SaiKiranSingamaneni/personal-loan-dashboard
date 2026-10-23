@@ -146,7 +146,7 @@ export const timelineQuerySchema = z
   });
 
 const prepaymentModeSchema = z.enum(["reduce-tenure", "reduce-emi"]);
-const simulationScenarioSchema = z.discriminatedUnion("type", [
+export const simulationScenarioSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("prepayment"),
     amount: z.number().int().positive().safe(),
@@ -182,3 +182,4 @@ export const isoDateInputSchema = isoDateSchema;
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;
 export type LoanUpdateInput = z.infer<typeof loanUpdateSchema>;
 export type LoanEditInput = z.infer<typeof loanEditSchema>;
+export type SimulationScenarioInput = z.infer<typeof simulationScenarioSchema>;

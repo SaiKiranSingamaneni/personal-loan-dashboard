@@ -20,6 +20,8 @@ import { PaymentHistoryChart } from "./PaymentHistoryChart.js";
 import { AmortizationTable } from "./AmortizationTable.js";
 import { PrepaymentImpact } from "./PrepaymentImpact.js";
 import { AllLoansOverview } from "./AllLoansOverview.js";
+import { WhatIfSimulator } from "./WhatIfSimulator.js";
+import { EmiCalculatorPage } from "./EmiCalculator.js";
 
 interface LoanListItem {
   id: string;
@@ -152,6 +154,7 @@ function AppShell() {
           })}
         </nav>
         <Link className="add-loan-link" to="/loans/new"><span aria-hidden="true">+</span> Add loan</Link>
+        <NavLink to="/calculator" className={({ isActive }) => `calculator-link${isActive ? " is-active" : ""}`}>EMI calculator</NavLink>
         {loans.length === 0 && (
           <p className="sidebar-empty">Your loan list will appear here.</p>
         )}
@@ -178,7 +181,7 @@ function AppShell() {
           <div className="topbar-right"><span className="local-badge"><span /> Local only</span></div>
         </header>
         <div className="content-area">
-          {loans.length === 0 && !isFormRoute ? (
+          {loans.length === 0 && !isFormRoute && location.pathname !== "/calculator" ? (
             <EmptyLoans />
           ) : (
             <Outlet context={{ loans }} />
@@ -256,6 +259,7 @@ function LoanPage() {
             <CumulativeInterestChart loanId={loan.id} />
             <PaymentHistoryChart loanId={loan.id} />
             <PrepaymentImpact loanId={loan.id} />
+            <WhatIfSimulator loanId={loan.id} />
           </>
         ) : null
       ) : tab === "activity" ? (
@@ -289,5 +293,5 @@ export function LoanRoute() {
   return <LoanPage />;
 }
 
-export { AllLoansOverview, LoanFormPage };
+export { AllLoansOverview, EmiCalculatorPage, LoanFormPage };
 

@@ -33,6 +33,10 @@ describe("loan summary", () => {
       ],
       asOf: asIsoDate("2025-02-01"),
     });
+    expect(summary.propertyCost).toBe(200_000);
+    expect(summary.ownContribution).toBe(50_000);
+    expect(summary.loanUtilized).toBe(100_000);
+    expect(summary.principalDisbursedAsOf).toBe(100_000);
     expect(summary.ownContributionPercent).toBe(25);
     expect(summary.loanSharePercent).toBe(50);
     expect(summary.propertyCostRemaining).toBe(50_000);

@@ -11,6 +11,7 @@ import {
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
 import { LoanFormPage } from "./LoanForm.js";
+import { LoanSummaryDashboard, type LoanSummaryData } from "./LoanSummaryDashboard.js";
 
 interface LoanListItem {
   id: string;
@@ -191,6 +192,11 @@ function LoanPage() {
     queryFn: () => apiRequest<LoanListItem>(`/api/loans/${loanId}`),
     enabled: loanId !== undefined,
   });
+  const summaryQuery = useQuery({
+    queryKey: ["loans", loanId, "summary"],
+    queryFn: () => apiRequest<{ summary: LoanSummaryData }>(`/api/loans/${loanId}/summary`),
+    enabled: loanId !== undefined && tab === "overview",
+  });
 
   if (loanQuery.isPending) {
     return <div className="panel-skeleton" aria-label="Loading loan details" />;
@@ -230,7 +236,15 @@ function LoanPage() {
           </button>
         ))}
       </div>
-      <section className="placeholder-panel" role="tabpanel">
+      {tab === "overview" ? (
+        summaryQuery.isPending ? (
+          <div className="panel-skeleton" aria-label="Loading loan summary" />
+        ) : summaryQuery.error ? (
+          <ApiError error={summaryQuery.error} />
+        ) : summaryQuery.data ? (
+          <LoanSummaryDashboard summary={summaryQuery.data.summary} />
+        ) : null
+      ) : <section className="placeholder-panel" role="tabpanel">
         <div className="panel-kicker">{tab}</div>
         <h2>{tab === "overview" ? "Your loan at a glance" : tab === "activity" ? "Recent loan activity" : "Repayment schedule"}</h2>
         <p>The dashboard is connected to your local loan data. The next build step adds loan setup and live summary values here.</p>
@@ -239,7 +253,7 @@ function LoanPage() {
           <div><span>Lender</span><strong>{loan.lender}</strong></div>
           <div><span>Loan type</span><strong>{loan.loanType}</strong></div>
         </div>
-      </section>
+      </section>}
     </>
   );
 }

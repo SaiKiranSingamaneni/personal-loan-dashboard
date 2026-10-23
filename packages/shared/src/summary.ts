@@ -15,6 +15,10 @@ export interface SummaryInput {
 }
 
 export interface LoanSummary {
+  propertyCost: Paise | null;
+  ownContribution: Paise;
+  loanUtilized: Paise;
+  principalDisbursedAsOf: Paise;
   ownContributionPercent: number | null;
   loanSharePercent: number | null;
   propertyCostRemaining: Paise | null;
@@ -94,6 +98,10 @@ export function summarizeLoan(input: SummaryInput): LoanSummary {
   }
 
   return {
+    propertyCost: input.propertyCost ?? null,
+    ownContribution: asPaise(input.ownContribution),
+    loanUtilized: asPaise(totalDisbursed),
+    principalDisbursedAsOf: asPaise(disbursedAsOf),
     ownContributionPercent: percent(
       input.ownContribution,
       input.propertyCost ?? 0,

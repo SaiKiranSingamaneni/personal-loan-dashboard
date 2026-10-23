@@ -1,5 +1,5 @@
 # Build state
-Current task: P3-T3 - Last updated: 2026-10-23
+Current task: P4-T1 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -22,7 +22,7 @@ Current task: P3-T3 - Last updated: 2026-10-23
 - [x] P2-T7 Simulate, export/import, backup (on start and daily, keep 30), trash and restore endpoints.
 - [x] P3-T1 Vite app, routing (`/loans/:id`), layout with loan switcher sidebar, theme toggle, API client, loading and error states.
 - [x] P3-T2 Loan create/edit form with validation, derived read-only values and warnings.
-- [ ] P3-T3 Summary cards, funding split donut, repayment progress bars.
+- [x] P3-T3 Summary cards, funding split donut, repayment progress bars.
 - [ ] P4-T1 Forms for payments, disbursements, own contributions, rate changes and notes (add, edit, delete).
 - [ ] P4-T2 Timeline view: chronological merge, filters, search, month grouping, Upcoming and overdue states.
 - [ ] P4-T3 Scheduled EMI generation and the mark-as-paid flow.
@@ -87,3 +87,4 @@ Current task: P3-T3 - Last updated: 2026-10-23
 - 2026-10-23 - P2 gate - Expanded endpoint validation coverage to 51 tests and verified a startup backup is created in a temporary database directory - P3-T1 frontend shell is next.
 - 2026-10-23 - P3-T1 - Added React/Vite shell, URL-synced loan selector, preserved tab query, theme toggle, local API client, and loading/error states; `npm run build` passes - P3-T2 loan form remains.
 - 2026-10-23 - P3-T2 - Added validated loan create/edit form, paise-safe EMI/funding previews and atomic initial funding saves; 54 tests pass and web build succeeds - P3-T3 summary cards and funding split remain.
+- 2026-10-23 - P3-T3 - Added six loan summary cards, Recharts funding donut, and repayment/disbursement progress bars with warnings; verification passes and web build succeeds - P4-T1 entry forms remain.

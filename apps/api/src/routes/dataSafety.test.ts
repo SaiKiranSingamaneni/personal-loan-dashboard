@@ -68,8 +68,7 @@ describe("data safety endpoints", () => {
     expect(overwritten.status).toBe(200);
     expect((await request(app).get("/api/loans")).body).toHaveLength(1);
     const roundTrip = await request(app).get("/api/export");
-    expect(roundTrip.body.loans).toEqual(exported.body.loans);
-    expect(roundTrip.body.contributions).toEqual(exported.body.contributions);
+    expect({ ...roundTrip.body, exportedAt: exported.body.exportedAt }).toEqual(exported.body);
 
     const brokenRelationship = {
       ...exported.body,

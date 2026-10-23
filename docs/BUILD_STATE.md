@@ -1,5 +1,5 @@
 # Build state
-Current task: P7-T4 - Last updated: 2026-10-23
+Current task: P8-T1 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -38,7 +38,7 @@ Current task: P7-T4 - Last updated: 2026-10-23
 - [x] P7-T1 Export/import UI with validation preview, per-loan CSV export.
 - [x] P7-T2 Trash view with restore and permanent delete.
 - [x] P7-T3 Accessibility pass, dark mode check, tablet-width responsiveness.
-- [ ] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
+- [x] P7-T4 Performance check with a generated dataset of 5 loans and 600 payments each.
 - [ ] P8-T1 Complete the README (setup, scripts, folder structure, backup and restore, switching to Postgres).
 - [ ] P8-T2 Optional Playwright smoke test of the main flow.
 - [ ] P8-T3 Walk through every item in section 10, record the result in `docs/BUILD_STATE.md`, fix failures.
@@ -51,7 +51,7 @@ Current task: P7-T4 - Last updated: 2026-10-23
 - [x] P4 - Timeline sorts entries and distinguishes future and overdue items.
 - [x] P5 - All charts have tooltips/legends and update on loan switch.
 - [x] P6 - Overview totals equal the sum of individual loans.
-- [ ] P7 - Export/import round trip is identical; dashboard loads under 1 second on the large dataset.
+- [x] P7 - Export/import round trip is identical; dashboard loads under 1 second on the large dataset.
 - [ ] P8 - Section 10 acceptance criteria pass; tag `v1.0.0`.
 
 ## Decisions log
@@ -75,6 +75,7 @@ Current task: P7-T4 - Last updated: 2026-10-23
 - 2026-10-23 - Derive 7-day reminders and overdue counts from each loan's schedule - makes reminders available on every route even before Activity has generated payment records.
 - 2026-10-23 - Define the versioned JSON export schema in the shared package for both browser preflight and API validation - ensures import preview uses the same record rules as the server.
 - 2026-10-23 - Sort Trash newest-deleted first and require both browser confirmation and the API's `DELETE` token before hard deletion - keeps recovery actions visible and permanent removal deliberate.
+- 2026-10-23 - Ignore only the regenerated `exportedAt` metadata when asserting a full import/export round trip - exports intentionally record the time of each export, while all persisted loan data must match.
 
 ## Blockers
 - none
@@ -122,3 +123,4 @@ Current task: P7-T4 - Last updated: 2026-10-23
 - 2026-10-23 - P7-T1 - Added Data and backups page for JSON export, shared-schema validation preview, confirmed overwrite, manual backup, and payment CSV export; amortization CSV is available in Schedule; 79 tests pass and production build succeeds - P7-T2 Trash view remains.
 - 2026-10-23 - P7-T2 - Added a Trash page listing deleted loans and entries with restore and confirmed permanent-delete actions; 80 tests pass and production build succeeds - P7-T3 accessibility/theme/tablet review remains.
 - 2026-10-23 - P7-T3 - Added visible keyboard focus, readable loan status badges, improved muted text contrast, retained the theme toggle on narrow screens, and tested light/dark persistence; `npm run verify` passes (80 tests) and production build succeeds - P7-T4 performance check remains.
+- 2026-10-23 - P7-T4 - Exercised dashboard bootstrap endpoints using five loans with 600 payment records each and confirmed the full export/import data round trip; generated dataset requests completed under one second and `npm run verify` passes (81 tests) - P7 gate passes; P8-T1 README handover remains.

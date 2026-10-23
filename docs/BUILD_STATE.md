@@ -1,5 +1,5 @@
 # Build state
-Current task: P2-T5 - Last updated: 2026-10-23
+Current task: P2-T6 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -17,7 +17,7 @@ Current task: P2-T5 - Last updated: 2026-10-23
 - [x] P2-T2 Repository interfaces and SQLite implementation (WAL on, transactions for multi-row writes).
 - [x] P2-T3 Express skeleton: bind to 127.0.0.1, shared Zod validation, error format, health endpoint.
 - [x] P2-T4 Loans CRUD, `/summary` and `/schedule` endpoints.
-- [ ] P2-T5 Payments, disbursements, rate changes, contributions and notes endpoints.
+- [x] P2-T5 Payments, disbursements, rate changes, contributions and notes endpoints.
 - [ ] P2-T6 Timeline endpoint (merge, filter, search, order).
 - [ ] P2-T7 Simulate, export/import, backup (on start and daily, keep 30), trash and restore endpoints.
 - [ ] P3-T1 Vite app, routing (`/loans/:id`), layout with loan switcher sidebar, theme toggle, API client, loading and error states.
@@ -58,6 +58,7 @@ Current task: P2-T5 - Last updated: 2026-10-23
 - 2026-10-23 - Use npm workspaces and a shared root TypeScript/ESLint/Prettier/Vitest toolchain - matches the specified npm monorepo and keeps setup local-first.
 - 2026-10-23 - Round calculated interest to nearest paisa with half-paisa values rounded up; tenure begins at the first EMI after pre-EMI - makes schedule rounding and staged funding deterministic.
 - 2026-10-23 - Apply a prepayment after any EMI due on the same date; rate changes affect the first installment due on or after their effective date - uses date-only schedule boundaries consistently.
+- 2026-10-23 - Store the prepayment reduction choice on a prepayment or part-payment record - preserves how the loan schedule should be recalculated.
 
 ## Blockers
 - none
@@ -79,3 +80,4 @@ Current task: P2-T5 - Last updated: 2026-10-23
 - 2026-10-23 - P2-T2 - Added versioned migration runner, SQLite WAL connection factory, typed repositories with soft delete/restore, and rollback tests - P2-T3 Express API skeleton remains.
 - 2026-10-23 - P2-T3 - Added Express app/health route, loopback server binding, shared Zod loan schemas, validation helpers, and consistent errors; 37 tests pass - P2-T4 loans API remains.
 - 2026-10-23 - P2-T4 - Added loan CRUD/archive endpoints plus derived summary and amortization schedule routes; 40 tests pass - P2-T5 payment and funding endpoints remain.
+- 2026-10-23 - P2-T5 - Added validated CRUD routes for payments, disbursements, contributions, rate changes, and notes; 42 tests pass - P2-T6 timeline endpoint remains.

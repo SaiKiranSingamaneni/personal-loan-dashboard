@@ -104,6 +104,9 @@ export const payments = sqliteTable(
     interestPart: integer("interest_part_paise").notNull(),
     status: text("status", { enum: ["scheduled", "paid", "missed"] }).notNull(),
     scheduledPeriod: integer("scheduled_period"),
+    prepaymentMode: text("prepayment_mode", {
+      enum: ["reduce-tenure", "reduce-emi"],
+    }),
     note: text("note"),
     deletedAt: text("deleted_at"),
     createdAt: text("created_at").notNull(),

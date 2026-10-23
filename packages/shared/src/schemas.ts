@@ -53,6 +53,62 @@ export const loanUpdateSchema = loanFieldsSchema
   .strict()
   .superRefine(validateEmiStartRule);
 
+const paymentFieldsSchema = z.object({
+    date: isoDateSchema,
+    amount: z.number().int().nonnegative().safe(),
+    type: z.enum(["emi", "prepayment", "part-payment", "fee", "other"]),
+    principalPart: z.number().int().nonnegative().safe(),
+    interestPart: z.number().int().nonnegative().safe(),
+    status: z.enum(["scheduled", "paid", "missed"]),
+    scheduledPeriod: z.number().int().positive().nullable().optional(),
+    prepaymentMode: z.enum(["reduce-tenure", "reduce-emi"]).nullable().optional(),
+    note: z.string().trim().max(1000).nullable().optional(),
+}).strict();
+
+export const paymentCreateSchema = paymentFieldsSchema.refine(
+  (payment) =>
+    payment.principalPart + payment.interestPart <= payment.amount &&
+    ((payment.type !== "prepayment" && payment.type !== "part-payment") ||
+      payment.prepaymentMode !== undefined),
+  {
+    path: ["amount"],
+    message:
+      "Payment splits cannot exceed the amount, and prepayments require a reduction mode.",
+  },
+);
+
+export const paymentUpdateSchema = paymentFieldsSchema.partial().strict();
+
+export const disbursementCreateSchema = z
+  .object({
+    date: isoDateSchema,
+    amount: z.number().int().positive().safe(),
+    note: z.string().trim().max(1000).nullable().optional(),
+  })
+  .strict();
+export const disbursementUpdateSchema = disbursementCreateSchema.partial().strict();
+
+export const contributionCreateSchema = disbursementCreateSchema;
+export const contributionUpdateSchema = disbursementUpdateSchema;
+
+export const rateChangeCreateSchema = z
+  .object({
+    effectiveDate: isoDateSchema,
+    annualRatePercent: z.number().finite().min(0).max(1000),
+    mode: z.enum(["keep-emi", "keep-tenure"]),
+  })
+  .strict();
+export const rateChangeUpdateSchema = rateChangeCreateSchema.partial().strict();
+
+export const noteCreateSchema = z
+  .object({
+    date: isoDateSchema,
+    text: z.string().trim().min(1).max(5000),
+    paymentId: z.string().uuid().nullable().optional(),
+  })
+  .strict();
+export const noteUpdateSchema = noteCreateSchema.partial().strict();
+
 export const isoDateInputSchema = isoDateSchema;
 
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;

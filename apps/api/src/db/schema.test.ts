@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import { runMigrations } from "./connection.js";
 import { seedDemoData } from "./seed.js";
 
 describe("initial SQLite schema and demo seed", () => {
@@ -12,6 +13,8 @@ describe("initial SQLite schema and demo seed", () => {
 
   it("creates all loan entities and seeds two related demo loans idempotently", () => {
     db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    runMigrations(db);
     expect(seedDemoData(db)).toBe(true);
     expect(seedDemoData(db)).toBe(false);
     expect(db.prepare("SELECT COUNT(*) AS count FROM loans").get()).toEqual({ count: 2 });
@@ -32,11 +35,14 @@ describe("initial SQLite schema and demo seed", () => {
       "notes",
       "payments",
       "rate_changes",
+      "schema_migrations",
     ]);
   });
 
   it("enforces loan type, positive tenure, and foreign-key constraints", () => {
     db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    runMigrations(db);
     seedDemoData(db);
     expect(() =>
       db!.prepare("UPDATE loans SET tenure_months = 0 WHERE id = ?").run("demo-home-loan"),

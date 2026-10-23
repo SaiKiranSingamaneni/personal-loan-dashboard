@@ -1,18 +1,9 @@
-import { mkdirSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-
-const migrationPath = fileURLToPath(new URL("./migrations/0001_initial.sql", import.meta.url));
-const migrationSql = readFileSync(migrationPath, "utf8");
+import { openSqliteDatabase } from "./connection.js";
 
 export function seedDemoData(db: Database.Database): boolean {
-  const loansTable = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'loans'")
-    .get();
-  if (loansTable === undefined) {
-    db.exec(migrationSql);
-  }
   const existing = db.prepare("SELECT COUNT(*) AS count FROM loans").get() as {
     count: number;
   };
@@ -114,15 +105,12 @@ export function seedDemoData(db: Database.Database): boolean {
 
 function runSeedScript(): void {
   const databasePath = resolve(process.env.DATABASE_PATH ?? "./data/loans.db");
-  mkdirSync(dirname(databasePath), { recursive: true });
-  const db = new Database(databasePath);
+  const connection = openSqliteDatabase(databasePath);
   try {
-    db.pragma("foreign_keys = ON");
-    db.pragma("journal_mode = WAL");
-    const inserted = seedDemoData(db);
+    const inserted = seedDemoData(connection.client);
     process.stdout.write(inserted ? "Seeded two demo loans.\n" : "Database already contains loans; no seed data added.\n");
   } finally {
-    db.close();
+    connection.close();
   }
 }
 

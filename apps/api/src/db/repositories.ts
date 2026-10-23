@@ -1,0 +1,182 @@
+import { and, eq, getTableColumns, isNull } from "drizzle-orm";
+import {
+  type SQLiteColumn,
+  type SQLiteTable,
+} from "drizzle-orm/sqlite-core";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type Database from "better-sqlite3";
+import {
+  contributions,
+  disbursements,
+  loans,
+  notes,
+  payments,
+  rateChanges,
+  schema,
+} from "./schema.js";
+
+export interface EntityRepository<TRecord, TCreate, TUpdate> {
+  list(): TRecord[];
+  getById(id: string): TRecord | undefined;
+  create(value: TCreate): TRecord;
+  update(id: string, value: TUpdate): TRecord | undefined;
+  softDelete(id: string, deletedAt: string): boolean;
+  restore(id: string): boolean;
+  hardDelete(id: string): boolean;
+}
+
+export interface LoanScopedRepository<TRecord, TCreate, TUpdate>
+  extends EntityRepository<TRecord, TCreate, TUpdate> {
+  listByLoan(loanId: string): TRecord[];
+}
+
+export interface LoanRepository
+  extends EntityRepository<
+    typeof loans.$inferSelect,
+    typeof loans.$inferInsert,
+    Partial<typeof loans.$inferInsert>
+  > {
+  listActive(): (typeof loans.$inferSelect)[];
+}
+
+export interface LoanChildrenRepository {
+  disbursements: LoanScopedRepository<
+    typeof disbursements.$inferSelect,
+    typeof disbursements.$inferInsert,
+    Partial<typeof disbursements.$inferInsert>
+  >;
+  contributions: LoanScopedRepository<
+    typeof contributions.$inferSelect,
+    typeof contributions.$inferInsert,
+    Partial<typeof contributions.$inferInsert>
+  >;
+  rateChanges: LoanScopedRepository<
+    typeof rateChanges.$inferSelect,
+    typeof rateChanges.$inferInsert,
+    Partial<typeof rateChanges.$inferInsert>
+  >;
+  payments: LoanScopedRepository<
+    typeof payments.$inferSelect,
+    typeof payments.$inferInsert,
+    Partial<typeof payments.$inferInsert>
+  >;
+  notes: LoanScopedRepository<
+    typeof notes.$inferSelect,
+    typeof notes.$inferInsert,
+    Partial<typeof notes.$inferInsert>
+  >;
+}
+
+export interface RepositorySet {
+  loans: LoanRepository;
+  children: LoanChildrenRepository;
+  transaction<T>(work: () => T): T;
+}
+
+type TableWithSoftDelete = SQLiteTable & {
+  id: SQLiteColumn;
+  deletedAt: SQLiteColumn;
+};
+
+function createEntityRepository<TTable extends TableWithSoftDelete>(
+  db: BetterSQLite3Database<typeof schema>,
+  table: TTable,
+): EntityRepository<
+  InferSelectModel<TTable>,
+  InferInsertModel<TTable>,
+  Partial<InferInsertModel<TTable>>
+> {
+  const columns = getTableColumns(table);
+  return {
+    list: () =>
+      db
+        .select()
+        .from(table)
+        .where(isNull(columns.deletedAt))
+        .all() as InferSelectModel<TTable>[],
+    getById: (id) =>
+      db
+        .select()
+        .from(table)
+        .where(and(eq(columns.id, id), isNull(columns.deletedAt)))
+        .get() as InferSelectModel<TTable> | undefined,
+    create: (value) =>
+      db.insert(table).values(value).returning().get() as InferSelectModel<TTable>,
+    update: (id, value) => {
+      const updated = db
+        .update(table)
+        .set({ ...value, updatedAt: new Date().toISOString() })
+        .where(and(eq(columns.id, id), isNull(columns.deletedAt)))
+        .returning()
+        .get();
+      return updated as InferSelectModel<TTable> | undefined;
+    },
+    softDelete: (id, deletedAt) =>
+      db
+        .update(table)
+        .set({ deletedAt, updatedAt: deletedAt } as Partial<InferInsertModel<TTable>>)
+        .where(and(eq(columns.id, id), isNull(columns.deletedAt)))
+        .run().changes > 0,
+    restore: (id) =>
+      db
+        .update(table)
+        .set(
+          { deletedAt: null, updatedAt: new Date().toISOString() } as Partial<
+            InferInsertModel<TTable>
+          >,
+        )
+        .where(eq(columns.id, id))
+        .run().changes > 0,
+    hardDelete: (id) => db.delete(table).where(eq(columns.id, id)).run().changes > 0,
+  };
+}
+
+function createLoanScopedRepository<TTable extends TableWithSoftDelete>(
+  db: BetterSQLite3Database<typeof schema>,
+  table: TTable,
+): LoanScopedRepository<
+  InferSelectModel<TTable>,
+  InferInsertModel<TTable>,
+  Partial<InferInsertModel<TTable>>
+> {
+  const repository = createEntityRepository(db, table);
+  const columns = getTableColumns(table) as unknown as Record<string, SQLiteColumn>;
+  const loanIdColumn = columns.loanId;
+  if (loanIdColumn === undefined) {
+    throw new Error("Loan-scoped repository table must include loanId");
+  }
+  return {
+    ...repository,
+    listByLoan: (loanId) =>
+      db
+        .select()
+        .from(table)
+        .where(and(eq(loanIdColumn, loanId), isNull(columns.deletedAt)))
+        .all() as InferSelectModel<TTable>[],
+  };
+}
+
+export function createSqliteRepositories(client: Database.Database): RepositorySet {
+  const db = drizzle(client, { schema });
+  const loanEntities = createEntityRepository(db, loans);
+  return {
+    loans: {
+      ...loanEntities,
+      listActive: () =>
+        db
+          .select()
+          .from(loans)
+          .where(and(isNull(loans.deletedAt), isNull(loans.archivedAt)))
+          .all(),
+    },
+    children: {
+      disbursements: createLoanScopedRepository(db, disbursements),
+      contributions: createLoanScopedRepository(db, contributions),
+      rateChanges: createLoanScopedRepository(db, rateChanges),
+      payments: createLoanScopedRepository(db, payments),
+      notes: createLoanScopedRepository(db, notes),
+    },
+    transaction: (work) => client.transaction(work)(),
+  };
+}

@@ -1,5 +1,5 @@
 # Build state
-Current task: P1-T1 - Last updated: 2026-10-23
+Current task: P2-T1 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -45,7 +45,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 
 ## Phase gates
 - [x] P0 - `npm run verify` passes on the empty workspaces.
-- [ ] P1 - Engine tests pass; invariants hold; engine coverage is at least 90%.
+- [x] P1 - Engine tests pass; invariants hold; engine coverage is at least 90%.
 - [ ] P2 - Integration tests cover every endpoint and validation failure; startup backup exists.
 - [ ] P3 - UI creates a loan, shows correct EMI/cards, and switches loans with URL sync and no reload.
 - [ ] P4 - Timeline sorts entries and distinguishes future and overdue items.
@@ -56,6 +56,8 @@ Current task: P1-T1 - Last updated: 2026-10-23
 
 ## Decisions log
 - 2026-10-23 - Use npm workspaces and a shared root TypeScript/ESLint/Prettier/Vitest toolchain - matches the specified npm monorepo and keeps setup local-first.
+- 2026-10-23 - Round calculated interest to nearest paisa with half-paisa values rounded up; tenure begins at the first EMI after pre-EMI - makes schedule rounding and staged funding deterministic.
+- 2026-10-23 - Apply a prepayment after any EMI due on the same date; rate changes affect the first installment due on or after their effective date - uses date-only schedule boundaries consistently.
 
 ## Blockers
 - none
@@ -72,3 +74,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P1-T6 - Added staged funding projections with pre-EMI interest on disbursed funds and configurable EMI start - P1-T7 summary metrics remain.
 - 2026-10-23 - P1-T7 - Added summary metrics and funding reconciliation warnings for property funding, sanction, and payment overages - P1-T8 what-if simulator remains.
 - 2026-10-23 - P1-T8 - Added pure one-time/recurring prepayment and rate-change what-if projections - P1 randomized invariants and coverage gate remain.
+- 2026-10-23 - P1 gate - Added 100 deterministic randomized schedule invariant cases and enforced 90% line/function/statement coverage; 28 tests pass and aggregate coverage is above threshold - P2-T1 is next.

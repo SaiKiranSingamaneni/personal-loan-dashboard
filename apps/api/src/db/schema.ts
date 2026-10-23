@@ -30,6 +30,7 @@ export const loans = sqliteTable("loans", {
   processingFee: integer("processing_fee_paise"),
   otherCharges: integer("other_charges_paise"),
   propertyCost: integer("property_cost_paise"),
+  invoiceGrandTotal: integer("invoice_grand_total_paise"),
   emiStartRule: text("emi_start_rule", { enum: ["full-disbursement", "date"] })
     .notNull()
     .default("full-disbursement"),

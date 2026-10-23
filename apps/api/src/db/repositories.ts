@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, isNotNull, isNull } from "drizzle-orm";
 import {
   type SQLiteColumn,
   type SQLiteTable,
@@ -18,6 +18,8 @@ import {
 
 export interface EntityRepository<TRecord, TCreate, TUpdate> {
   list(): TRecord[];
+  listDeleted(): TRecord[];
+  getDeletedById(id: string): TRecord | undefined;
   getById(id: string): TRecord | undefined;
   create(value: TCreate): TRecord;
   update(id: string, value: TUpdate): TRecord | undefined;
@@ -95,6 +97,18 @@ function createEntityRepository<TTable extends TableWithSoftDelete>(
         .from(table)
         .where(isNull(columns.deletedAt))
         .all() as InferSelectModel<TTable>[],
+    listDeleted: () =>
+      db
+        .select()
+        .from(table)
+        .where(isNotNull(columns.deletedAt))
+        .all() as InferSelectModel<TTable>[],
+    getDeletedById: (id) =>
+      db
+        .select()
+        .from(table)
+        .where(and(eq(columns.id, id), isNotNull(columns.deletedAt)))
+        .get() as InferSelectModel<TTable> | undefined,
     getById: (id) =>
       db
         .select()

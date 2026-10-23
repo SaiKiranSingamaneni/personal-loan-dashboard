@@ -34,6 +34,7 @@ export function runMigrations(
 
 export interface SqliteConnection {
   client: Database.Database;
+  databasePath: string;
   close(): void;
 }
 
@@ -53,5 +54,5 @@ export function openSqliteDatabase(
     client.close();
     throw error;
   }
-  return { client, close: () => client.close() };
+  return { client, databasePath: resolvedPath, close: () => client.close() };
 }

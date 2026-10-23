@@ -128,6 +128,38 @@ export const timelineQuerySchema = z
     }
   });
 
+const prepaymentModeSchema = z.enum(["reduce-tenure", "reduce-emi"]);
+const simulationScenarioSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("prepayment"),
+    amount: z.number().int().positive().safe(),
+    date: isoDateSchema,
+    mode: prepaymentModeSchema,
+  }),
+  z.object({
+    type: z.literal("recurring-prepayment"),
+    amount: z.number().int().positive().safe(),
+    firstDate: isoDateSchema,
+    intervalMonths: z.number().int().min(1).max(1200),
+    count: z.number().int().min(1).max(1200),
+    mode: prepaymentModeSchema,
+  }),
+  z.object({
+    type: z.literal("rate-change"),
+    changes: z.array(rateChangeCreateSchema).min(1),
+  }),
+]);
+
+export const simulateRequestSchema = z
+  .object({
+    principal: z.number().int().positive().safe(),
+    annualRatePercent: z.number().finite().min(0).max(1000),
+    tenureMonths: z.number().int().min(1).max(1200),
+    firstDueDate: isoDateSchema,
+    scenario: simulationScenarioSchema,
+  })
+  .strict();
+
 export const isoDateInputSchema = isoDateSchema;
 
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;

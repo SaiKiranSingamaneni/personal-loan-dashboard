@@ -95,9 +95,10 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] R-T8 Move existing charts to the Analysis tab, remove the old Timeline and per-entity forms, update the README.
 
 ### Rewrite phase gate
-- [ ] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
+- [x] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Session log
+- 2026-10-23 - Rewrite phase gate - `npm run verify` passes on the committed R-T1 through R-T8 tree (100 tests); created the `rewrite-complete` tag.
 - 2026-10-23 - R-T8 - Reorganized loans into Dashboard, Activity, Analysis, and Loan details; moved charts/amortization to Analysis, removed old Activity/Timeline UI, preserved legacy tab URLs, and updated README; `npm run verify` passes (100 tests) and the web build succeeds - final verify and `rewrite-complete` tag remain.
 - 2026-10-23 - R-T7 - Replaced legacy entry list/timeline on Activity with a unified filterable, sortable, paginated table, current-filter totals, sticky date/header, notes expansion, computed splits, edit/delete, and Trash restore; `npm run verify` passes (105 tests) and the web build succeeds - R-T8 is next.
 - 2026-10-23 - R-T6 - Added type-specific unified Activity entry creation and editing, locked edit type, inline date/title/amount/rate validation, success toast, cancel, and scroll-to-edit behavior; `npm run verify` passes (103 tests) and the web build succeeds - R-T7 is next.

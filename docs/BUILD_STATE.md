@@ -1,5 +1,5 @@
 # Build state
-Current task: P6-T1 - Last updated: 2026-10-23
+Current task: P6-T2 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -32,7 +32,7 @@ Current task: P6-T1 - Last updated: 2026-10-23
 - [x] P5-T4 Payment history chart with missed payments highlighted.
 - [x] P5-T5 Amortization table with paid markers, sorting and CSV export.
 - [x] P5-T6 Prepayment impact comparison.
-- [ ] P6-T1 All-loans overview (totals, per-loan comparison chart, combined upcoming dues).
+- [x] P6-T1 All-loans overview (totals, per-loan comparison chart, combined upcoming dues).
 - [ ] P6-T2 What-if simulator UI with Apply, and the standalone EMI calculator.
 - [ ] P6-T3 In-app due reminders (7-day banner, overdue count in the sidebar).
 - [ ] P7-T1 Export/import UI with validation preview, per-loan CSV export.
@@ -70,6 +70,7 @@ Current task: P6-T1 - Last updated: 2026-10-23
 - 2026-10-23 - Show paid, scheduled, and missed payment amounts as separate monthly bar series - makes missed installments visually distinct while retaining the scheduled-versus-actual comparison.
 - 2026-10-23 - Export amortization amounts in readable INR decimal units while keeping stored values in paise - makes the CSV useful without changing exact stored money.
 - 2026-10-23 - Base the prepayment comparison on paid prepayment/part-payment rows and their recorded reduction mode - compares the current amortization schedule with the actual principal reductions entered by the user.
+- 2026-10-23 - Use the loan summary's next unpaid installment for combined upcoming dues and count all non-deleted loans in overview totals - keeps the overview consistent with the per-loan summary values.
 
 ## Blockers
 - none
@@ -110,3 +111,4 @@ Current task: P6-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P5-T5 - Added the Schedule tab amortization table with period/date/amount sorting, paid and missed markers, and INR CSV export; 70 tests pass and production build succeeds - P5-T6 prepayment impact comparison remains.
 - 2026-10-23 - P5-T6 - Added side-by-side base and prepayment projections for total interest, term, closure date, interest saved, and months saved for both reduction modes; 72 tests pass and production build succeeds - P5 chart/table gate passes; P6-T1 all-loans overview is next.
 - 2026-10-23 - P5 gate - Confirmed all specified loan charts are mounted in the loan overview with tooltips/legends, loan-scoped query keys, and the amortization table has sorting/export; full verification passes (72 tests) and production build succeeds - P6-T1 is next.
+- 2026-10-23 - P6-T1 - Added the All loans route/sidebar link, combined outstanding/EMI/interest totals, outstanding comparison chart, and next due list sorted by date; 73 tests pass and production build succeeds - P6-T2 what-if simulator and EMI calculator remain.

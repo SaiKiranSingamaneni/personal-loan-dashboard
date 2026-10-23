@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { App, LoanFormPage, LoanRoute } from "./App.js";
+import { AllLoansOverview, App, LoanFormPage, LoanRoute } from "./App.js";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -20,7 +20,7 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />}>
-            <Route index element={null} />
+            <Route index element={<AllLoansOverview />} />
             <Route path="loans/new" element={<LoanFormPage />} />
             <Route path="loans/:loanId/edit" element={<LoanFormPage />} />
             <Route path="loans/:loanId" element={<LoanRoute />} />

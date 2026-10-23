@@ -3,7 +3,6 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   Link,
   NavLink,
-  Navigate,
   Outlet,
   useLocation,
   useSearchParams,
@@ -20,6 +19,7 @@ import { CumulativeInterestChart } from "./CumulativeInterestChart.js";
 import { PaymentHistoryChart } from "./PaymentHistoryChart.js";
 import { AmortizationTable } from "./AmortizationTable.js";
 import { PrepaymentImpact } from "./PrepaymentImpact.js";
+import { AllLoansOverview } from "./AllLoansOverview.js";
 
 interface LoanListItem {
   id: string;
@@ -115,10 +115,6 @@ function AppShell() {
   if (loansQuery.error !== null) {
     return <main className="center-state"><ApiError error={loansQuery.error} /></main>;
   }
-  if (location.pathname === "/" && loans.length > 0) {
-    return <Navigate to={`/loans/${loans[0]!.id}${location.search}`} replace />;
-  }
-
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -131,6 +127,9 @@ function AppShell() {
           <span>Your loans</span>
           <span className="loan-count">{loans.length}</span>
         </div>
+        <NavLink to="/" end className={({ isActive }) => `all-loans-link${isActive ? " is-active" : ""}`}>
+          <span className="all-loans-icon" aria-hidden="true">▦</span><span>All loans</span>
+        </NavLink>
         <nav className="loan-list" aria-label="Loan selector">
           {loans.map((loan, index) => {
             const balance = summaries[index]?.data?.summary.outstandingPrincipal;
@@ -290,5 +289,5 @@ export function LoanRoute() {
   return <LoanPage />;
 }
 
-export { LoanFormPage };
+export { AllLoansOverview, LoanFormPage };
 

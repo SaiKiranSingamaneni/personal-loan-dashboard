@@ -81,6 +81,19 @@ Current task: Complete - Last updated: 2026-10-23
 ## Blockers
 - none
 
+## Loan screen rewrite tasks
+- [ ] R-T1 Data model, migration and repository changes.
+- [ ] R-T2 Engine: split logic, auto EMI generation, dashboard summary, warnings, with tests.
+- [ ] R-T3 API endpoints and integration tests.
+- [ ] R-T4 Property cost editor in Loan details.
+- [ ] R-T5 Dashboard: banner, KPI cards, both pies, progress bars, glossary and tooltips.
+- [ ] R-T6 Activity form with type-specific fields and the edit mode.
+- [ ] R-T7 Activity table: filters, sort, scrolling, pagination, totals strip, delete and trash.
+- [ ] R-T8 Move existing charts to the Analysis tab, remove the old Timeline and per-entity forms, update the README.
+
+### Rewrite phase gate
+- [ ] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
+
 ## Session log
 - 2026-10-23 - Post-v1 EMI basis and loan delete - Added selectable sanctioned/disbursed EMI basis, optional pre-EMI interest-only behavior, daily/monthly pure payment split with carry-forward warnings, payment breakdown API/UI, and sidebar loan-to-Trash action; `npm run verify` passes (90 tests) - no outstanding work.
 - 2026-10-23 - Post-v1 EMI and Activity update - Added a persisted EMI calculation basis (sanctioned or disbursed principal), migration for existing databases, completed EMI timeline filter, and verified due EMIs are automatically marked paid; `npm run verify` passes (85 tests) - no outstanding work.

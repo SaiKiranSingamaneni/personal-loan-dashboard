@@ -18,6 +18,7 @@ import { BalanceOverTimeChart } from "./BalanceOverTimeChart.js";
 import { PrincipalInterestChart } from "./PrincipalInterestChart.js";
 import { CumulativeInterestChart } from "./CumulativeInterestChart.js";
 import { PaymentHistoryChart } from "./PaymentHistoryChart.js";
+import { AmortizationTable } from "./AmortizationTable.js";
 
 interface LoanListItem {
   id: string;
@@ -261,6 +262,8 @@ function LoanPage() {
           <LoanTimeline loanId={loan.id} />
           <LoanEntries loanId={loan.id} />
         </>
+      ) : tab === "schedule" ? (
+        <AmortizationTable loanId={loan.id} />
       ) : <section className="placeholder-panel" role="tabpanel">
         <div className="panel-kicker">{tab}</div>
         <h2>{tab === "overview" ? "Your loan at a glance" : tab === "activity" ? "Recent loan activity" : "Repayment schedule"}</h2>

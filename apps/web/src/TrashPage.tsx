@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest } from "./api.js";
 
-type TrashType = "loan" | "payment" | "disbursement" | "contribution" | "rate-change" | "note";
+type TrashType = "loan" | "payment" | "disbursement" | "contribution" | "rate-change" | "note" | "activity";
 interface TrashRow {
   id: string;
   entityType: TrashType;
@@ -17,6 +17,8 @@ interface TrashRow {
   mode?: string;
   text?: string;
   note?: string | null;
+  title?: string;
+  notes?: string | null;
   deletedAt: string | null;
 }
 
@@ -27,12 +29,14 @@ const typeLabel: Record<TrashType, string> = {
   contribution: "Contribution",
   "rate-change": "Rate change",
   note: "Note",
+  activity: "Activity",
 };
 
 function title(row: TrashRow): string {
   if (row.entityType === "loan") return row.name ?? "Untitled loan";
   if (row.entityType === "payment") return `${row.type ?? "Payment"} · ${row.date ?? ""}`;
   if (row.entityType === "note") return "Note";
+  if (row.entityType === "activity") return row.title ?? "Activity entry";
   if (row.entityType === "rate-change") return `${row.annualRatePercent ?? ""}% · ${row.mode ?? "Rate reset"}`;
   return row.note || (row.entityType === "disbursement" ? "Loan disbursement" : "Own contribution");
 }
@@ -59,7 +63,7 @@ export function TrashPage() {
         <section className="chart-card trash-list-card" aria-label="Deleted records">
           <ul className="trash-list">{rows.map((row) => <li key={`${row.entityType}-${row.id}`}>
             <span className={`trash-type trash-type-${row.entityType}`}>{typeLabel[row.entityType]}</span>
-            <div className="trash-record-copy">{(row.entityType === "note" ? row.text : row.note) && <span className="entry-note">{row.entityType === "note" ? row.text : row.note}</span>}<strong>{title(row)}</strong><span>{row.deletedAt ? `Deleted ${row.deletedAt.slice(0, 10)}` : "Deleted"}{row.loanId ? ` · Loan ${row.loanId}` : ""}</span></div>
+            <div className="trash-record-copy">{(row.entityType === "activity" ? row.notes : row.entityType === "note" ? row.text : row.note) && <span className="entry-note">{row.entityType === "activity" ? row.notes : row.entityType === "note" ? row.text : row.note}</span>}<strong>{title(row)}</strong><span>{row.deletedAt ? `Deleted ${row.deletedAt.slice(0, 10)}` : "Deleted"}{row.loanId ? ` · Loan ${row.loanId}` : ""}</span></div>
             {typeof row.amount === "number" && <span className="trash-amount">{formatIndianMoney(asPaise(row.amount))}</span>}
             <div className="trash-actions"><button className="button button-secondary" type="button" onClick={() => restoreMutation.mutate(row)} disabled={restoreMutation.isPending}>Restore</button><button className="button button-danger" type="button" onClick={() => { if (window.confirm("Permanently delete this item? This cannot be undone.")) deleteMutation.mutate(row); }} disabled={deleteMutation.isPending}>Delete permanently</button></div>
           </li>)}</ul>

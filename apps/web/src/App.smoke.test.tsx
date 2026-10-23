@@ -164,6 +164,10 @@ describe("main UI flow", () => {
             ? jsonResponse({ error: { code: "LOAN_NOT_FOUND", message: "Missing loan" } }, 404)
             : jsonResponse(makeDashboard(loan));
         }
+        if (/^\/api\/loans\/[^/]+\/activity$/.test(url.pathname)) {
+          return jsonResponse({ items: [], total: 0, page: 1, pageSize: 10, totals: { selfContributions: 0, loanDisbursed: 0, emisPaid: 0, extraPayments: 0 } });
+        }
+        if (/^\/api\/loans\/[^/]+\/property$/.test(url.pathname)) return jsonResponse({ components: [], invoiceGrandTotal: null });
         return jsonResponse([]);
       }),
     );

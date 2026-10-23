@@ -86,4 +86,26 @@ describe("Activity and property APIs", () => {
     expect(upcoming.body.items[0].status).toBe("UPCOMING");
     expect(upcoming.body.items[0].origin).toBe("AUTO");
   });
+
+  it("combines server-side type, status, search, date, order, and pagination filters", async () => {
+    const entries = [
+      { type: "SELF_CONTRIBUTION", date: "2026-01-01", title: "Booking bank", amount: 10_000, source: "BANK" },
+      { type: "LOAN_DISBURSEMENT", date: "2026-02-01", title: "Tranche alpha", amount: 20_000 },
+      { type: "EMI", date: "2026-03-01", title: "March installment", amount: 5_000, dueDate: "2026-03-01", status: "PAID" },
+      { type: "EXTRA_EMI", date: "2026-04-01", title: "Bonus payment", amount: 3_000, mode: "REDUCE_TENURE" },
+    ];
+    for (const entry of entries) await request(app).post(`/api/loans/${loanId}/activity`).send(entry).expect(201);
+
+    const response = await request(app).get(
+      `/api/loans/${loanId}/activity?type=EMI,EXTRA_EMI&status=PAID&from=2026-03-01&to=2026-04-01&q=installment&sort=oldest&page=1&pageSize=10`,
+    ).expect(200);
+    expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
+    expect(response.body.items[0].title).toBe("March installment");
+    expect(response.body.totals.emisPaid).toBe(5_000);
+
+    const newest = await request(app).get(`/api/loans/${loanId}/activity?from=2026-01-01&to=2026-04-01&sort=newest&page=1&pageSize=10`).expect(200);
+    expect(newest.body.items[0].title).toBe("Bonus payment");
+    const nextPage = await request(app).get(`/api/loans/${loanId}/activity?page=2&pageSize=10`).expect(200);
+    expect(nextPage.body.page).toBe(2);
+  });
 });

@@ -13,8 +13,6 @@ import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
 import { LoanFormPage } from "./LoanForm.js";
 import { BeginnerLoanDashboard } from "./BeginnerLoanDashboard.js";
-import { LoanEntries } from "./LoanEntries.js";
-import { LoanTimeline } from "./LoanTimeline.js";
 import { BalanceOverTimeChart } from "./BalanceOverTimeChart.js";
 import { PrincipalInterestChart } from "./PrincipalInterestChart.js";
 import { CumulativeInterestChart } from "./CumulativeInterestChart.js";
@@ -27,7 +25,7 @@ import { EmiCalculatorPage } from "./EmiCalculator.js";
 import { buildDueReminderSummary, localIsoToday } from "./dueReminders.js";
 import { DataManagementPage } from "./DataManagement.js";
 import { TrashPage } from "./TrashPage.js";
-import { ActivityEntryForm } from "./ActivityEntryForm.js";
+import { ActivityTab } from "./ActivityTab.js";
 
 interface LoanListItem {
   id: string;
@@ -298,11 +296,7 @@ function LoanPage() {
           </>
         ) : null
       ) : tab === "activity" ? (
-        <>
-          <ActivityEntryForm loanId={loan.id} />
-          <LoanTimeline loanId={loan.id} />
-          <LoanEntries loanId={loan.id} />
-        </>
+        <ActivityTab loanId={loan.id} />
       ) : tab === "schedule" ? (
         <AmortizationTable loanId={loan.id} />
       ) : <section className="placeholder-panel" role="tabpanel">

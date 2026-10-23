@@ -16,7 +16,7 @@ export interface ActivityFormEntry {
   componentId?: string | null;
   trancheLabel?: string | null;
   bankReference?: string | null;
-  status?: "PAID" | "MISSED" | "SKIPPED" | null;
+  status?: "PAID" | "MISSED" | "SKIPPED" | "UPCOMING" | null;
   dueDate?: string | null;
   mode?: "REDUCE_TENURE" | "REDUCE_EMI" | null;
   newRatePercent?: number | null;
@@ -84,7 +84,7 @@ export function ActivityEntryForm({ loanId, editingEntry = null, onEditComplete 
       componentId: editingEntry.componentId ?? "",
       trancheLabel: editingEntry.trancheLabel ?? "",
       bankReference: editingEntry.bankReference ?? "",
-      status: editingEntry.status ?? "PAID",
+      status: editingEntry.status === "UPCOMING" || editingEntry.status == null ? "PAID" : editingEntry.status,
       mode: editingEntry.mode ?? "REDUCE_TENURE",
       newRatePercent: editingEntry.newRatePercent?.toString() ?? "",
       rateOption: editingEntry.rateOption ?? "KEEP_EMI_CHANGE_TENURE",

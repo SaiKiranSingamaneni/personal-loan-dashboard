@@ -109,6 +109,25 @@ export const noteCreateSchema = z
   .strict();
 export const noteUpdateSchema = noteCreateSchema.partial().strict();
 
+export const timelineQuerySchema = z
+  .object({
+    type: z.enum(["payment", "disbursement", "contribution", "rate-change", "note"]).optional(),
+    from: isoDateSchema.optional(),
+    to: isoDateSchema.optional(),
+    q: z.string().trim().max(100).optional(),
+    order: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .strict()
+  .superRefine((query, context) => {
+    if (query.from !== undefined && query.to !== undefined && query.from > query.to) {
+      context.addIssue({
+        code: "custom",
+        path: ["from"],
+        message: "Start date must be on or before end date.",
+      });
+    }
+  });
+
 export const isoDateInputSchema = isoDateSchema;
 
 export type LoanCreateInput = z.infer<typeof loanCreateSchema>;

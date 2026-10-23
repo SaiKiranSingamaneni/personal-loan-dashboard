@@ -15,6 +15,7 @@ import type { LoanCreateInput, LoanUpdateInput } from "@loan-dashboard/shared";
 import { HttpError } from "../http/errors.js";
 import { validateBody } from "../http/validation.js";
 import type { RepositorySet } from "../db/repositories.js";
+import { getTimeline } from "./timeline.js";
 
 function getLoan(repositories: RepositorySet, id: string) {
   const loan = repositories.loans.getById(id);
@@ -179,6 +180,10 @@ export function createLoansRouter(repositories: RepositorySet): Router {
         status: statusByPeriod.get(row.period) ?? "scheduled",
       })),
     );
+  });
+
+  router.get("/:id/timeline", (request, response) => {
+    response.json(getTimeline(repositories, routeId(request), request.query));
   });
 
   router.get("/:id", (request, response) => {

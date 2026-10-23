@@ -1,5 +1,5 @@
 # Build state
-Current task: P2-T6 - Last updated: 2026-10-23
+Current task: P2-T7 - Last updated: 2026-10-23
 
 ## Tasks
 - [x] P0-T1 Git repo, npm workspaces monorepo (`apps/web`, `apps/api`, `packages/shared`), strict TypeScript configs, ESLint, Prettier, Vitest.
@@ -18,7 +18,7 @@ Current task: P2-T6 - Last updated: 2026-10-23
 - [x] P2-T3 Express skeleton: bind to 127.0.0.1, shared Zod validation, error format, health endpoint.
 - [x] P2-T4 Loans CRUD, `/summary` and `/schedule` endpoints.
 - [x] P2-T5 Payments, disbursements, rate changes, contributions and notes endpoints.
-- [ ] P2-T6 Timeline endpoint (merge, filter, search, order).
+- [x] P2-T6 Timeline endpoint (merge, filter, search, order).
 - [ ] P2-T7 Simulate, export/import, backup (on start and daily, keep 30), trash and restore endpoints.
 - [ ] P3-T1 Vite app, routing (`/loans/:id`), layout with loan switcher sidebar, theme toggle, API client, loading and error states.
 - [ ] P3-T2 Loan create/edit form with validation, derived read-only values and warnings.
@@ -81,3 +81,4 @@ Current task: P2-T6 - Last updated: 2026-10-23
 - 2026-10-23 - P2-T3 - Added Express app/health route, loopback server binding, shared Zod loan schemas, validation helpers, and consistent errors; 37 tests pass - P2-T4 loans API remains.
 - 2026-10-23 - P2-T4 - Added loan CRUD/archive endpoints plus derived summary and amortization schedule routes; 40 tests pass - P2-T5 payment and funding endpoints remain.
 - 2026-10-23 - P2-T5 - Added validated CRUD routes for payments, disbursements, contributions, rate changes, and notes; 42 tests pass - P2-T6 timeline endpoint remains.
+- 2026-10-23 - P2-T6 - Added merged timeline endpoint with type/date/text filtering, stable sort order, and upcoming/overdue flags; 45 tests pass - P2-T7 data safety endpoints remain.

@@ -147,7 +147,7 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
   };
 }
 
-function toPayload(values: LoanFormValues) {
+function toPayload(values: LoanFormValues, includeInitialFunding = true) {
   return {
     name: values.name.trim(),
     lender: values.lender.trim(),
@@ -167,10 +167,12 @@ function toPayload(values: LoanFormValues) {
     processingFee: optionalPaise(values.processingFee),
     otherCharges: optionalPaise(values.otherCharges),
     propertyCost: optionalPaise(values.propertyCost),
-    initialOwnContribution:
-      values.initialOwnContribution === "" ? 0 : rupeesToPaise(values.initialOwnContribution),
-    initialLoanUtilized:
-      values.initialLoanUtilized === "" ? 0 : rupeesToPaise(values.initialLoanUtilized),
+    ...(includeInitialFunding ? {
+      initialOwnContribution:
+        values.initialOwnContribution === "" ? 0 : rupeesToPaise(values.initialOwnContribution),
+      initialLoanUtilized:
+        values.initialLoanUtilized === "" ? 0 : rupeesToPaise(values.initialLoanUtilized),
+    } : {}),
     emiStartRule: values.emiStartRule,
     emiStartDate: values.emiStartRule === "date" ? values.emiStartDate : null,
   };
@@ -259,7 +261,7 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
 
   const mutation = useMutation({
     mutationFn: async (nextValues: LoanFormValues) => {
-      const payload = toPayload(nextValues);
+      const payload = toPayload(nextValues, !isEditing);
       return isEditing
         ? apiRequest<LoanRecord>(`/api/loans/${loanId}`, {
             method: "PUT",
@@ -375,7 +377,7 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
           </div>
         </fieldset>
 
-        <fieldset className="form-section">
+        {!isEditing && <fieldset className="form-section">
           <legend><span className="section-number">02</span> Property funding <span className="optional-label">Optional</span></legend>
           <p className="section-help">Record what you paid and how much of the sanctioned loan has been used.</p>
           <div className="form-grid">
@@ -394,10 +396,10 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
               {derived.warnings.map((warning) => <li key={warning}>{warning}</li>)}
             </ul>
           )}
-        </fieldset>
+        </fieldset>}
 
         <fieldset className="form-section">
-          <legend><span className="section-number">03</span> EMI start rule</legend>
+          <legend><span className="section-number">{isEditing ? "02" : "03"}</span> EMI start rule</legend>
           <div className="form-grid">
             {showEmiBasis && <label className="form-field" htmlFor="emiBasis"><span>Is your EMI calculated on the sanctioned amount or on the disbursed amount?</span><select id="emiBasis" {...form.register("emiBasis")}><option value="SANCTIONED">Sanctioned amount — EMI fixed on full amount from the start</option><option value="DISBURSED">Disbursed amount — EMI recalculated after each disbursement</option></select></label>}
             {showEmiBasis && <label className="form-field checkbox-field"><input type="checkbox" {...form.register("preEmiInterestOnly")} /><span>Before final disbursement, collect interest only</span></label>}

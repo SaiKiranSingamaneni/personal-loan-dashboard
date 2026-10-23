@@ -204,6 +204,8 @@ describe("main UI flow", () => {
     await user.click(screen.getByRole("tab", { name: "Loan details" }));
     expect(await screen.findByRole("heading", { name: "Property cost" })).toBeTruthy();
     expect(window.location.pathname).toBe("/loans/loan-1/edit");
+    expect(screen.queryByLabelText(/Total own contribution/)).toBeNull();
+    expect(screen.queryByLabelText(/Total loan utilized/)).toBeNull();
     await user.click(screen.getByRole("tab", { name: "Dashboard" }));
     expect(await screen.findByText("Total property cost")).toBeTruthy();
 

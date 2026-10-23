@@ -19,6 +19,7 @@ import { PrincipalInterestChart } from "./PrincipalInterestChart.js";
 import { CumulativeInterestChart } from "./CumulativeInterestChart.js";
 import { PaymentHistoryChart } from "./PaymentHistoryChart.js";
 import { AmortizationTable } from "./AmortizationTable.js";
+import { PrepaymentImpact } from "./PrepaymentImpact.js";
 
 interface LoanListItem {
   id: string;
@@ -255,6 +256,7 @@ function LoanPage() {
             <PrincipalInterestChart loanId={loan.id} />
             <CumulativeInterestChart loanId={loan.id} />
             <PaymentHistoryChart loanId={loan.id} />
+            <PrepaymentImpact loanId={loan.id} />
           </>
         ) : null
       ) : tab === "activity" ? (

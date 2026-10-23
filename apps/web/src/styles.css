@@ -187,6 +187,20 @@ html[data-theme="dark"] .button-danger { color: #f38b81; }
 .cumulative-interest-chart { width: 100%; height: 290px; margin-top: 8px; }
 .payment-history-card { margin-top: 18px; }
 .payment-history-chart { width: 100%; height: 300px; margin-top: 8px; }
+.prepayment-impact-card { margin-top: 18px; }
+.prepayment-empty { margin: 16px 0 0; color: var(--muted); font-size: 11px; }
+.prepayment-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 17px; }
+.prepayment-scenario { display: grid; gap: 6px; padding: 17px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.prepayment-scenario-label { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .35px; }
+.prepayment-scenario > strong { color: var(--text); font-size: 21px; letter-spacing: -.4px; }
+.prepayment-scenario > span:nth-of-type(2) { color: var(--muted); font-size: 10px; }
+.scenario-with-prepayments { border-color: color-mix(in srgb, #42a27f 36%, var(--line)); background: color-mix(in srgb, #42a27f 5%, var(--surface)); }
+.prepayment-secondary-metric { display: flex; justify-content: space-between; gap: 8px; padding-top: 7px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.prepayment-secondary-metric b { color: var(--text); text-align: right; }
+.prepayment-savings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.prepayment-savings > div { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 13px 15px; border-radius: 10px; background: color-mix(in srgb, #4d71dc 7%, var(--surface)); }
+.prepayment-savings span { color: var(--muted); font-size: 10px; }
+.prepayment-savings strong { color: var(--accent); font-size: 13px; }
 .amortization-card { margin-top: 24px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
 .amortization-heading { align-items: center; }
 .amortization-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; padding: 14px 0; }
@@ -308,4 +322,5 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
   .donut-chart { height: 225px; }
   .funding-amounts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
   .funding-amounts strong { padding-left: 0; font-size: 9px; }
+  .prepayment-comparison, .prepayment-savings { grid-template-columns: 1fr; }
 }

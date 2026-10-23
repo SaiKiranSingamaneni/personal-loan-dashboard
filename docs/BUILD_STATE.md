@@ -11,7 +11,7 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - [x] P1-T4 Prepayments in both modes (reduce tenure, reduce EMI).
 - [x] P1-T5 Floating rate changes in both modes.
 - [x] P1-T6 Staged disbursement and pre-EMI interest.
-- [ ] P1-T7 Summary metrics from section 4.1 and the funding reconciliation checks with warnings.
+- [x] P1-T7 Summary metrics from section 4.1 and the funding reconciliation checks with warnings.
 - [ ] P1-T8 Pure what-if `simulate()` function.
 - [ ] P2-T1 Schema and migrations for every entity in section 3 (soft delete, timestamps), plus the demo seed script.
 - [ ] P2-T2 Repository interfaces and SQLite implementation (WAL on, transactions for multi-row writes).
@@ -70,3 +70,4 @@ Current task: P1-T1 - Last updated: 2026-10-23
 - 2026-10-23 - P1-T4 - Added prepayment schedule recalculation for reduce-tenure and reduce-EMI options - P1-T5 floating rate changes remain.
 - 2026-10-23 - P1-T5 - Added floating rate reset recalculation for keep-EMI and keep-tenure modes - P1-T6 staged disbursement remains.
 - 2026-10-23 - P1-T6 - Added staged funding projections with pre-EMI interest on disbursed funds and configurable EMI start - P1-T7 summary metrics remain.
+- 2026-10-23 - P1-T7 - Added summary metrics and funding reconciliation warnings for property funding, sanction, and payment overages - P1-T8 what-if simulator remains.

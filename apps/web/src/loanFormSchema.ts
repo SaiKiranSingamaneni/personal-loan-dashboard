@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { isoDateInputSchema } from "@loan-dashboard/shared";
 
-const amountText = z.string().trim().regex(/^\d+(?:\.\d{1,2})?$/, "Enter a rupee amount with up to two decimal places.");
+const indianAmountPattern = /^(?:\d+|\d{1,2}(?:,\d{2})*,\d{3})(?:\.\d{1,2})?$/;
+const amountText = z.string().trim().refine(
+  (value) => indianAmountPattern.test(value),
+  "Enter a rupee amount with valid Indian grouping and up to two decimal places.",
+);
 const optionalAmountText = z.string().trim().refine(
-  (value) => value === "" || /^\d+(?:\.\d{1,2})?$/.test(value),
-  "Enter a rupee amount with up to two decimal places.",
+  (value) => value === "" || indianAmountPattern.test(value),
+  "Enter a rupee amount with valid Indian grouping and up to two decimal places.",
 );
 
 export const loanFormSchema = z

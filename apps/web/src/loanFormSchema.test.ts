@@ -16,6 +16,16 @@ describe("loan form validation", () => {
     ).toBe(true);
   });
 
+  it("accepts grouped rupee amounts in Indian notation", () => {
+    expect(loanFormSchema.safeParse({
+      ...emptyLoanFormValues,
+      name: "Apartment loan",
+      lender: "Example Bank",
+      sanctionedAmount: "1,30,69,875.25",
+      processingFee: "6,53,493.75",
+    }).success).toBe(true);
+  });
+
   it("reports amount, date, due-day, and EMI start date errors inline", () => {
     const result = loanFormSchema.safeParse({
       ...emptyLoanFormValues,

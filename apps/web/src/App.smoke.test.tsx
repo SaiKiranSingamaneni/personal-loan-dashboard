@@ -167,7 +167,7 @@ describe("main UI flow", () => {
         if (/^\/api\/loans\/[^/]+\/activity$/.test(url.pathname)) {
           return jsonResponse({ items: [], total: 0, page: 1, pageSize: 10, totals: { selfContributions: 0, loanDisbursed: 0, emisPaid: 0, extraPayments: 0 } });
         }
-        if (/^\/api\/loans\/[^/]+\/property$/.test(url.pathname)) return jsonResponse({ components: [], invoiceGrandTotal: null });
+        if (/^\/api\/loans\/[^/]+\/property$/.test(url.pathname)) return jsonResponse({ details: null, components: [] });
         return jsonResponse([]);
       }),
     );
@@ -185,13 +185,17 @@ describe("main UI flow", () => {
     await user.click(await screen.findByRole("link", { name: /add your first loan/i }));
     await user.type(screen.getByLabelText(/loan name/i), "Apartment loan");
     await user.type(screen.getByLabelText(/^lender/i), "Example Bank");
-    await user.type(screen.getByLabelText(/sanctioned amount/i), "5000000");
-    await user.clear(screen.getByLabelText(/annual interest rate/i));
-    await user.type(screen.getByLabelText(/annual interest rate/i), "8.5");
+    const sanctionedAmount = screen.getByLabelText(/sanctioned loan amount/i);
+    await user.type(sanctionedAmount, "5000000");
+    expect((sanctionedAmount as HTMLInputElement).value).toBe("50,00,000");
+    expect(screen.getByText("fifty lakh rupees")).toBeTruthy();
+    expect(screen.getByLabelText(/Is your EMI calculated on the sanctioned amount or on the disbursed amount/)).toBeTruthy();
+    await user.clear(screen.getByLabelText(/interest rate/i));
+    await user.type(screen.getByLabelText(/interest rate/i), "8.5");
     await user.clear(screen.getByLabelText(/tenure \(months\)/i));
     await user.type(screen.getByLabelText(/tenure \(months\)/i), "240");
-    await user.type(screen.getByLabelText(/total property cost/i), "6500000");
-    await user.type(screen.getByLabelText(/loan amount utilized/i), "5000000");
+    await user.type(screen.getByLabelText(/initial loan disbursement/i), "5000000");
+    expect(screen.queryByLabelText(/Is your EMI calculated on the sanctioned amount or on the disbursed amount/)).toBeNull();
     await user.click(screen.getByRole("button", { name: "Save loan" }));
 
     expect(await screen.findByText("Total property cost")).toBeTruthy();
@@ -202,7 +206,7 @@ describe("main UI flow", () => {
     await user.click(screen.getByRole("tab", { name: "Analysis" }));
     expect(await screen.findByRole("heading", { name: "Amortization schedule" })).toBeTruthy();
     await user.click(screen.getByRole("tab", { name: "Loan details" }));
-    expect(await screen.findByRole("heading", { name: "Property cost" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Property and cost details" })).toBeTruthy();
     expect(window.location.pathname).toBe("/loans/loan-1/edit");
     expect(screen.queryByLabelText(/Total own contribution/)).toBeNull();
     expect(screen.queryByLabelText(/Total loan utilized/)).toBeNull();
@@ -212,12 +216,12 @@ describe("main UI flow", () => {
     await user.click(screen.getByRole("link", { name: "Add loan" }));
     await user.type(screen.getByLabelText(/loan name/i), "Personal loan");
     await user.type(screen.getByLabelText(/^lender/i), "Example Credit");
-    await user.type(screen.getByLabelText(/sanctioned amount/i), "1000000");
-    await user.clear(screen.getByLabelText(/annual interest rate/i));
-    await user.type(screen.getByLabelText(/annual interest rate/i), "10");
+    await user.type(screen.getByLabelText(/sanctioned loan amount/i), "1000000");
+    await user.clear(screen.getByLabelText(/interest rate/i));
+    await user.type(screen.getByLabelText(/interest rate/i), "10");
     await user.clear(screen.getByLabelText(/tenure \(months\)/i));
     await user.type(screen.getByLabelText(/tenure \(months\)/i), "120");
-    await user.type(screen.getByLabelText(/loan amount utilized/i), "1000000");
+    await user.type(screen.getByLabelText(/initial loan disbursement/i), "1000000");
     await user.click(screen.getByRole("button", { name: "Save loan" }));
     expect(await screen.findByRole("heading", { name: "Personal loan" })).toBeTruthy();
     await user.click(screen.getByRole("tab", { name: "Activity" }));

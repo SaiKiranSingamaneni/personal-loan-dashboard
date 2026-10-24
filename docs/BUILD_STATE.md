@@ -98,12 +98,12 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Property cost rework tasks
-Current task: S-T4 - Last updated: 2026-10-24
+Current task: S-T5 - Last updated: 2026-10-24
 
 - [x] S-T1 Data model changes and migration (three groups, PropertyDetails, noted totals).
 - [x] S-T2 Engine: tiers, funding split, cross-checks, dashboard summary, tests with the fixture.
 - [x] S-T3 API: property endpoint and dashboard payload, integration tests.
-- [ ] S-T4 Loan form and property form with hints, Indian number input, live cross-check panel.
+- [x] S-T4 Loan form and property form with hints, Indian number input, live cross-check panel.
 - [ ] S-T5 Property cost breakdown popup and the (i) icon.
 - [ ] S-T6 KPI cards, the two new pies, summary banner update, empty states.
 - [ ] S-T7 Glossary and tooltips, remove the old two-group editor and the old property pie toggle, update README.
@@ -112,6 +112,7 @@ Current task: S-T4 - Last updated: 2026-10-24
 - [ ] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
 
 ## Session log
+- 2026-10-24 - S-T4 - Reworked loan inputs with accessible italic hints, EMI-basis visibility, Indian grouped money entry and words; replaced the old property editor with four tier cards, live cross-checks, notes and exact-paise saving; `npm run verify` passes (108 tests) - S-T5 is next.
 - 2026-10-24 - S-T3 - Extended GET/PUT property with validated PropertyDetails persistence and added tier totals, funding split, cross-checks, and popup-ready component breakdown to the dashboard API; `npm run verify` passes (104 tests) - S-T4 is next.
 - 2026-10-24 - S-T2 - Added pure three-tier totals, effective GST percentages, tolerance-based cross-checks, per-slot parking readout, loan/self-paid/cash split, and paid-so-far/remaining-to-pay dashboard derivation; fixture and edge tests pass; `npm run verify` passes (104 tests) - S-T3 is next.
 - 2026-10-24 - S-T1 - Added per-loan property details and noted totals, migrated cost groups to AGREEMENT/ADDITIONAL/CASH with normalized kinds, preserved legacy component IDs and activity links, and included property details in JSON export/import; `npm run verify` passes (101 tests) - S-T2 is next.

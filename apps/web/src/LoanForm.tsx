@@ -15,6 +15,7 @@ import {
 } from "@loan-dashboard/shared";
 import { apiRequest, ApiClientError } from "./api.js";
 import { PropertyCostEditor } from "./PropertyCostEditor.js";
+import { amountInWords, formatIndianMoneyInput, isValidIndianMoneyInput } from "./inputFormatting.js";
 import {
   emptyLoanFormValues,
   loanFormSchema,
@@ -54,9 +55,6 @@ interface DerivedValues {
   totalInterest: string;
   totalPayable: string;
   interestPercent: string;
-  ownPercent: string;
-  loanPercent: string;
-  remaining: string;
   undisbursed: string;
   warnings: string[];
 }
@@ -88,17 +86,13 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
   let totalPayable = "—";
   let interestPercent = "—";
   let sanctioned = 0;
-  let own = 0;
   let utilized = 0;
-  let cost = 0;
   try {
     sanctioned = rupeesToPaise(values.sanctionedAmount);
-    own = values.initialOwnContribution === "" ? 0 : rupeesToPaise(values.initialOwnContribution);
     utilized = values.initialLoanUtilized === "" ? 0 : rupeesToPaise(values.initialLoanUtilized);
-    cost = values.propertyCost === "" ? 0 : rupeesToPaise(values.propertyCost);
     const rate = Number(values.annualRatePercent);
     const months = Number(values.tenureMonths);
-    const emiPrincipal = values.emiBasis === "SANCTIONED" || utilized === 0 ? sanctioned : utilized;
+    const emiPrincipal = values.emiBasis === "SANCTIONED" ? sanctioned : utilized;
     if (emiPrincipal > 0 && Number.isFinite(rate) && Number.isInteger(months) && months > 0) {
       const calculatedEmi = calculateEmi(asPaise(emiPrincipal), rate, months);
       const override = values.emiOverride === "" ? null : rupeesToPaise(values.emiOverride);
@@ -128,9 +122,6 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
     // Inline field validation explains incomplete or invalid values while typing.
   }
 
-  if (cost > 0 && own + utilized > cost) {
-    warnings.push("Own contribution and loan utilized exceed the property cost.");
-  }
   if (sanctioned > 0 && utilized > sanctioned) {
     warnings.push("Loan utilized exceeds the sanctioned amount.");
   }
@@ -139,9 +130,6 @@ function calculateDerived(values: LoanFormValues): DerivedValues {
     totalInterest,
     totalPayable,
     interestPercent,
-    ownPercent: cost > 0 ? `${((own / cost) * 100).toFixed(1)}%` : "—",
-    loanPercent: cost > 0 ? `${((utilized / cost) * 100).toFixed(1)}%` : "—",
-    remaining: cost > 0 ? formatIndianMoney(asPaise(cost - own - utilized)) : "—",
     undisbursed: sanctioned > 0 ? formatIndianMoney(asPaise(Math.max(0, sanctioned - utilized))) : "—",
     warnings,
   };
@@ -210,8 +198,12 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
   const { reset } = form;
   const values = form.watch();
   const derived = useMemo(() => calculateDerived(values), [values]);
-  const sanctionedPaise = values.sanctionedAmount === "" ? 0 : Number(values.sanctionedAmount.replaceAll(",", "")) * 100;
-  const disbursedPaise = values.initialLoanUtilized === "" ? 0 : Number(values.initialLoanUtilized.replaceAll(",", "")) * 100;
+  const safeAmount = (value: string) => {
+    if (!isValidIndianMoneyInput(value) || value === "") return 0;
+    try { return rupeesToPaise(value); } catch { return 0; }
+  };
+  const sanctionedPaise = safeAmount(values.sanctionedAmount);
+  const disbursedPaise = safeAmount(values.initialLoanUtilized);
   const showEmiBasis = sanctionedPaise > disbursedPaise;
 
   useEffect(() => {
@@ -290,8 +282,38 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
     return typeof message === "string" ? message : undefined;
   }
 
+  const hints: Record<keyof LoanFormValues, string> = {
+    name: "A short name to identify this loan in your dashboard.",
+    lender: "The bank or lender named on your loan documents.",
+    loanType: "Choose the category that best describes this loan.",
+    accountReference: "Optional account or reference number from your lender.",
+    status: "Closed loans remain available in your history.",
+    sanctionedAmount: "The total the bank has approved. Not the amount released so far.",
+    annualRatePercent: "As on your sanction letter.",
+    rateType: "Choose fixed or floating as stated by your lender.",
+    tenureMonths: "Include any moratorium or pre-EMI period if your bank counts it.",
+    startDate: "The date your loan began, as shown by your lender.",
+    emiDueDay: "The calendar day your regular EMI is due each month.",
+    emiBasis: "Choose the amount the lender uses to calculate each EMI.",
+    preEmiInterestOnly: "Before final disbursement, record payments as interest only.",
+    interestMethod: "Use the method stated by your lender when you know it.",
+    emiOverride: "Leave as calculated unless your bank statement shows a different EMI.",
+    processingFee: "Optional fee charged when the loan was opened.",
+    otherCharges: "Optional upfront charges recorded with this loan.",
+    propertyCost: "Legacy total property value field; detailed property costs are entered below.",
+    initialOwnContribution: "Creates a self-contribution Activity entry for the amount already paid.",
+    initialLoanUtilized: "Creates a disbursement Activity entry for the amount already released.",
+    emiStartRule: "Choose when scheduled EMI entries should begin.",
+    emiStartDate: "EMIs from this date until today are automatically marked as paid in Activity. You can edit any of them.",
+  };
+
   function field(name: keyof LoanFormValues, label: string, options: { required?: boolean; type?: string; placeholder?: string; inputMode?: "decimal" | "numeric"; hint?: string } = {}) {
     const error = fieldError(name);
+    const helpId = `${name}-hint`;
+    const help = options.hint ?? hints[name];
+    const money = ["sanctionedAmount", "emiOverride", "processingFee", "otherCharges", "propertyCost", "initialOwnContribution", "initialLoanUtilized"].includes(name);
+    const words = money ? amountInWords(String(values[name] ?? "")) : "";
+    const registration = form.register(name);
     return (
       <label className="form-field" htmlFor={name}>
         <span>{label}{options.required && <span className="required-mark"> *</span>}</span>
@@ -301,10 +323,15 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
           placeholder={options.placeholder}
           inputMode={options.inputMode}
           aria-invalid={error !== undefined}
-          aria-describedby={error === undefined ? undefined : `${name}-error`}
-          {...form.register(name)}
+          aria-describedby={`${helpId}${error === undefined ? "" : ` ${name}-error`}`}
+          {...registration}
+          onChange={(event) => {
+            if (money) event.currentTarget.value = formatIndianMoneyInput(event.currentTarget.value);
+            void registration.onChange(event);
+          }}
         />
-        {options.hint && <small>{options.hint}</small>}
+        <small id={helpId} className="input-hint">{help}</small>
+        {words && <small className="amount-words">{words}</small>}
         {error && <small id={`${name}-error`} className="field-error">{error}</small>}
       </label>
     );
@@ -312,13 +339,15 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
 
   function select(name: "loanType" | "rateType" | "status" | "emiStartRule" | "emiBasis" | "interestMethod", label: string, choices: readonly [string, string][]) {
     const error = fieldError(name);
+    const helpId = `${name}-hint`;
     return (
       <label className="form-field" htmlFor={name}>
         <span>{label}</span>
-        <select id={name} aria-invalid={error !== undefined} {...form.register(name)}>
+        <select id={name} aria-invalid={error !== undefined} aria-describedby={`${helpId}${error === undefined ? "" : ` ${name}-error`}`} {...form.register(name)}>
           {choices.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
         </select>
-        {error && <small className="field-error">{error}</small>}
+        <small id={helpId} className="input-hint">{hints[name]}</small>
+        {error && <small id={`${name}-error`} className="field-error">{error}</small>}
       </label>
     );
   }
@@ -363,14 +392,16 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
             {field("lender", "Lender", { required: true, placeholder: "Bank or lender" })}
             {select("loanType", "Loan type", [["home", "Home"], ["plot", "Plot"], ["vehicle", "Vehicle"], ["personal", "Personal"], ["other", "Other"]])}
             {field("accountReference", "Account / reference number", { placeholder: "Optional" })}
-            {field("sanctionedAmount", "Sanctioned amount", { required: true, inputMode: "decimal", placeholder: "₹ 0.00" })}
-            {field("annualRatePercent", "Annual interest rate", { required: true, inputMode: "decimal", placeholder: "8.5" })}
+            {field("sanctionedAmount", "Sanctioned loan amount", { required: true, inputMode: "decimal", placeholder: "₹ 0.00" })}
+            {field("annualRatePercent", "Interest rate (% per year)", { required: true, inputMode: "decimal", placeholder: "8.5" })}
             {select("rateType", "Rate type", [["fixed", "Fixed"], ["floating", "Floating"]])}
             {field("tenureMonths", "Tenure (months)", { required: true, inputMode: "numeric", placeholder: "240" })}
             {field("startDate", "Loan start date", { required: true, type: "date" })}
+            {select("emiStartRule", "EMI start rule", [["full-disbursement", "After full disbursement"], ["date", "On a set date"]])}
+            {values.emiStartRule === "date" && field("emiStartDate", "EMI start date", { required: true, type: "date" })}
             {field("emiDueDay", "EMI due day", { required: true, inputMode: "numeric", placeholder: "5" })}
             {select("interestMethod", "Interest calculation", [["DAILY", "Daily (actual days / 365)"], ["MONTHLY", "Monthly"]])}
-            {field("emiOverride", "Manual EMI override", { inputMode: "decimal", placeholder: "Leave blank to calculate" })}
+            {field("emiOverride", "EMI amount (manual override)", { inputMode: "decimal", placeholder: "Leave blank to calculate" })}
             {select("status", "Loan status", [["active", "Active"], ["closed", "Closed"]])}
             {field("processingFee", "Processing fee", { inputMode: "decimal", placeholder: "Optional" })}
             {field("otherCharges", "Other upfront charges", { inputMode: "decimal", placeholder: "Optional" })}
@@ -378,19 +409,13 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
         </fieldset>
 
         {!isEditing && <fieldset className="form-section">
-          <legend><span className="section-number">02</span> Property funding <span className="optional-label">Optional</span></legend>
-          <p className="section-help">Record what you paid and how much of the sanctioned loan has been used.</p>
+          <legend><span className="section-number">02</span> Starting activity entries <span className="optional-label">Optional</span></legend>
+          <p className="section-help">These amounts are added to Activity as actual entries. Add more payments or disbursements from the Activity tab later.</p>
           <div className="form-grid">
-            {!isEditing && field("propertyCost", "Total property cost", { inputMode: "decimal", placeholder: "₹ 0.00" })}
-            {field("initialOwnContribution", isEditing ? "Total own contribution" : "Paid from own funds", { inputMode: "decimal", placeholder: "₹ 0.00" })}
-            {field("initialLoanUtilized", isEditing ? "Total loan utilized" : "Loan amount utilized", { inputMode: "decimal", placeholder: "₹ 0.00" })}
+            {field("initialOwnContribution", "Initial self contribution", { inputMode: "decimal", placeholder: "₹ 0.00" })}
+            {field("initialLoanUtilized", "Initial loan disbursement", { inputMode: "decimal", placeholder: "₹ 0.00" })}
           </div>
-          <div className="funding-derived">
-            <div><span>Own contribution</span><strong>{derived.ownPercent}</strong></div>
-            <div><span>Loan share</span><strong>{derived.loanPercent}</strong></div>
-            <div><span>Property cost remaining</span><strong>{derived.remaining}</strong></div>
-            <div><span>Sanctioned but not utilized</span><strong>{derived.undisbursed}</strong></div>
-          </div>
+          <div className="funding-derived funding-derived-single"><div><span>Sanctioned but not disbursed</span><strong>{derived.undisbursed}</strong></div></div>
           {derived.warnings.length > 0 && (
             <ul className="form-warnings" role="status">
               {derived.warnings.map((warning) => <li key={warning}>{warning}</li>)}
@@ -399,12 +424,10 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
         </fieldset>}
 
         <fieldset className="form-section">
-          <legend><span className="section-number">{isEditing ? "02" : "03"}</span> EMI start rule</legend>
+          <legend><span className="section-number">{isEditing ? "02" : "03"}</span> EMI calculation</legend>
           <div className="form-grid">
-            {showEmiBasis && <label className="form-field" htmlFor="emiBasis"><span>Is your EMI calculated on the sanctioned amount or on the disbursed amount?</span><select id="emiBasis" {...form.register("emiBasis")}><option value="SANCTIONED">Sanctioned amount — EMI fixed on full amount from the start</option><option value="DISBURSED">Disbursed amount — EMI recalculated after each disbursement</option></select></label>}
-            {showEmiBasis && <label className="form-field checkbox-field"><input type="checkbox" {...form.register("preEmiInterestOnly")} /><span>Before final disbursement, collect interest only</span></label>}
-            {select("emiStartRule", "EMI begins", [["full-disbursement", "After full disbursement"], ["date", "On a set date"]])}
-            {values.emiStartRule === "date" && field("emiStartDate", "EMI start date", { required: true, type: "date" })}
+            {showEmiBasis && <label className="form-field" htmlFor="emiBasis"><span>Is your EMI calculated on the sanctioned amount or on the disbursed amount?</span><select id="emiBasis" aria-describedby="emiBasis-hint" {...form.register("emiBasis")}><option value="SANCTIONED">Sanctioned amount — EMI fixed on full amount from the start</option><option value="DISBURSED">Disbursed amount — recomputed from current principal over remaining tenure</option></select><small id="emiBasis-hint" className="input-hint">Choose the EMI basis stated by your lender. This question appears while some of the sanctioned amount is still undisbursed.</small></label>}
+            {showEmiBasis && <div className="checkbox-field-wrap"><label className="form-field checkbox-field" htmlFor="preEmiInterestOnly"><input id="preEmiInterestOnly" type="checkbox" aria-describedby="preEmiInterestOnly-hint" {...form.register("preEmiInterestOnly")} /><span>Before final disbursement, payment covers interest only</span></label><small id="preEmiInterestOnly-hint" className="input-hint">Turn on if your lender collects only interest before the final disbursement.</small></div>}
           </div>
           <p className="section-help">Pre-EMI interest is calculated only on funds already disbursed.</p>
         </fieldset>
@@ -418,7 +441,7 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
           </button>
         </div>
       </form>
-      {isEditing && loanId !== undefined && <PropertyCostEditor loanId={loanId} />}
+      {isEditing && loanId !== undefined && <PropertyCostEditor loanId={loanId} sanctionedLoan={loanQuery.data?.sanctionedAmount ?? 0} />}
     </section>
   );
 }

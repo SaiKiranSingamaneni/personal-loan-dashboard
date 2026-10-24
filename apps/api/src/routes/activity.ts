@@ -303,6 +303,20 @@ export function createActivityRouter(repositories: RepositorySet): Router {
     const cashComponents = propertyComponents.filter((item) => item.group === "CASH");
     const checks = propertyTotals.checks;
     const amountPercent = (amount: number) => propertyTotals.finalCost <= 0 ? 0 : amount / propertyTotals.finalCost * 100;
+    const costSlices = propertyComponents.map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: item.amount,
+      group: item.group,
+      kind: item.kind,
+      percent: amountPercent(item.amount),
+    })).sort((left, right) => {
+      const groupRank = { AGREEMENT: 0, ADDITIONAL: 1, CASH: 2 };
+      const rankDifference = groupRank[left.group] - groupRank[right.group];
+      if (rankDifference !== 0) return rankDifference;
+      const kindRank = (kind: string | null) => kind === "BASE_PRICE" ? 0 : kind === "GST" ? 2 : 1;
+      return kindRank(left.kind) - kindRank(right.kind);
+    });
     response.json({
       loan: dashboard.loan,
       summary: dashboard.summary,
@@ -320,6 +334,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
         },
         checks,
         popup: {
+          costSlices,
           agreement: {
             basePrice: agreementComponents.filter((item) => item.kind === "BASE_PRICE"),
             otherCharges: agreementComponents.filter((item) => item.kind !== "BASE_PRICE" && item.kind !== "GST"),
@@ -336,6 +351,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
           },
           cash: { items: cashComponents, subtotal: propertyTotals.cashTotal },
           finalCost: propertyTotals.finalCost,
+          youPayTotal: asPaise(propertyTotals.selfPaidBank + propertyTotals.cashTotal),
           whoPays: [
             { id: "loan", name: "Loan", amount: propertyTotals.loanShare, percent: amountPercent(propertyTotals.loanShare) },
             { id: "self-paid-bank", name: "Self-paid (bank)", amount: propertyTotals.selfPaidBank, percent: amountPercent(propertyTotals.selfPaidBank) },

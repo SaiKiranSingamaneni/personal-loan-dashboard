@@ -57,6 +57,8 @@ describe("three-tier property cost derivation", () => {
     });
     expect(result.checks.find((item) => item.id === "area-rate")?.ok).toBe(false);
     expect(result.checks.find((item) => item.id === "loan-grand-total")?.ok).toBe(false);
+    expect(result.loanShare).toBe(result.grandTotal);
+    expect(result.loanShare + result.selfPaidBank + result.cashTotal).toBe(result.finalCost);
     expect(result.checks.find((item) => item.id === "noted-grand-total")?.difference).toBe(6_987_500);
     expect(result.parkingPerSlot).toBe(175_000);
   });

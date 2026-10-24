@@ -67,6 +67,10 @@ export function derivePropertyCost(input: {
   const totalBeforeCash = asPaise(grandTotal + additionalCharges);
   const cashTotal = sum(components, (row) => row.group === "CASH");
   const finalCost = asPaise(totalBeforeCash + cashTotal);
+  // Keep the allocated funding split reconciled even when the sanctioned
+  // amount exceeds the agreement value; the cross-check still reports the
+  // over-sanction as a warning.
+  const loanShare = asPaise(Math.min(sanctionedLoan, grandTotal));
   const basePrice = sum(components, (row) => row.kind === "BASE_PRICE");
   const areaRateExpected = roundToPaise(details.superBuiltUpSft * details.ratePerSft);
   const checks: PropertyCostCheck[] = [
@@ -85,8 +89,8 @@ export function derivePropertyCost(input: {
   const parkingCharges = details.parkingCharges ?? sum(components, (row) => row.kind === "PARKING");
   return {
     preGstSubtotal, gst, grandTotal, additionalCharges, totalBeforeCash, cashTotal, finalCost,
-    loanShare: sanctionedLoan,
-    selfPaidBank: asPaise(Math.max(0, totalBeforeCash - sanctionedLoan)),
+    loanShare,
+    selfPaidBank: asPaise(Math.max(0, totalBeforeCash - loanShare)),
     effectiveGstPreGstPercent: preGstSubtotal === 0 ? 0 : gst / preGstSubtotal * 100,
     effectiveGstGrandTotalPercent: grandTotal === 0 ? 0 : gst / grandTotal * 100,
     parkingPerSlot: details.parkingSlots > 0 ? roundToPaise(parkingCharges / details.parkingSlots) : null,

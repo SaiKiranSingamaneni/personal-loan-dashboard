@@ -20,11 +20,14 @@ interface DashboardSummary {
 interface PropertyComponent { id: string; name: string; group: "AGREEMENT" | "ADDITIONAL" | "CASH" | "OUTSIDE_AGREEMENT"; kind?: string; amount: number; note?: string | null }
 interface ActivityRow { id: string; title: string; date: string; amount: number | null; type: string; notes: string | null }
 interface PopupCostItem { id: string; name: string; amount: number; note?: string | null }
+interface CostSlice extends PopupCostItem { group: string; kind: string | null; percent: number }
 interface PropertyCostPopup {
+  costSlices: CostSlice[];
   agreement: { basePrice: PopupCostItem[]; otherCharges: PopupCostItem[]; gst: number; preGstSubtotal: number; grandTotal: number; loan: number; paidByYou: number };
   additional: { items: PopupCostItem[]; subtotal: number; totalBeforeCash: number };
   cash: { items: PopupCostItem[]; subtotal: number };
   finalCost: number;
+  youPayTotal: number;
   whoPays: { id: string; name: string; amount: number; percent: number }[];
   propertyFacts: { superBuiltUpSft: number; ratePerSft: number; parkingSlots: number } | null;
   checkDifferences: number;
@@ -35,7 +38,7 @@ interface DashboardResponse {
   components: PropertyComponent[];
   recentActivity: ActivityRow[];
   invoiceMismatch: { amount: number; direction: string } | null;
-  propertyBreakdown?: { popup: PropertyCostPopup };
+  propertyBreakdown?: { details: { superBuiltUpSft: number; ratePerSft: number; parkingSlots: number } | null; popup: PropertyCostPopup };
 }
 
 const agreementColors = ["#286c63", "#418d7d", "#63a99a", "#8bc5b7", "#b2ddd3", "#1f504a"];
@@ -84,7 +87,8 @@ function definitionFor(label: string): string | undefined {
 }
 function propertyGroupHeading(group: string | undefined, previousGroup: string | undefined) {
   if (group === previousGroup) return null;
-  return <strong className="beginner-legend-group">{group === "AGREEMENT" ? "Agreement" : group === "OUTSIDE_AGREEMENT" ? "Extra costs outside agreement" : ""}</strong>;
+  const heading = group === "AGREEMENT" ? "Tier 1 · Grand total" : group === "ADDITIONAL" || group === "OUTSIDE_AGREEMENT" ? "Tier 2 · Additional charges" : group === "CASH" ? "Tier 3 · Cash component" : "";
+  return heading ? <strong className="beginner-legend-group">{heading}</strong> : null;
 }
 
 function SliceLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent: fraction, name }: {
@@ -115,8 +119,13 @@ function PiePanel({ title, subtitle, total, data, colors, centreTitle, caption, 
           <Tooltip content={({ active: isActive, payload }) => {
             const item = payload?.[0]?.payload as typeof active[number] | undefined;
             if (!isActive || item === undefined) return null;
-            const share = percent(item.amount, totalForSlices);
-            return <div className="beginner-tooltip"><strong>{item.name}</strong><span>{exact(item.amount)} · {share.toFixed(1)}%</span><small>{title === "Property cost" ? `This is part of ${item.group === "AGREEMENT" ? "the builder agreement" : "extra costs outside the agreement"}.` : "This is part of the sanctioned loan amount."}</small></div>;
+            const share = "percent" in item && typeof item.percent === "number" ? item.percent : percent(item.amount, totalForSlices);
+            const explanation = title === "What the flat costs"
+              ? item.group === "AGREEMENT" ? "Included in the grand total (incl. GST)." : item.group === "CASH" ? "Paid separately as the cash component." : "Paid on top of the grand total."
+              : title === "Who pays"
+                ? item.name === "Loan" ? "Loan: borrowed from the bank; part of the grand total." : item.name === "Cash" ? "Cash: paid separately in cash." : "Self-paid: paid by you through the bank."
+                : "This is part of the sanctioned loan amount.";
+            return <div className="beginner-tooltip"><strong>{item.name}</strong><span>{exact(item.amount)} · {share.toFixed(1)}%</span><small>{explanation}</small></div>;
           }} />
         </PieChart></ResponsiveContainer>
         <div className="beginner-pie-centre"><span title={definitionFor(centreTitle)}>{centreTitle}{definitionFor(centreTitle) && " ⓘ"}</span><strong title={exact(total)}>{compact(total)}</strong></div>
@@ -124,11 +133,11 @@ function PiePanel({ title, subtitle, total, data, colors, centreTitle, caption, 
       {caption && <p className="beginner-pie-caption">{caption}</p>}
       <div className="beginner-legend-table" role="table" aria-label={`${title} amounts`}>
         {active.map((item, index) => <div className="beginner-legend-fragment" key={item.id}>
-          {title === "Property cost" && propertyGroupHeading(item.group, active[index - 1]?.group)}
+          {title === "What the flat costs" && propertyGroupHeading(item.group, active[index - 1]?.group)}
           <div className="beginner-legend-row" role="row">
             <span className="beginner-legend-name" role="cell" title={definitionFor(item.name)}><i style={{ background: colors(item, index) }} />{item.name}</span>
             <strong role="cell" title={exact(item.amount)}>{compact(item.amount)}</strong>
-            <span role="cell">{percent(item.amount, totalForSlices).toFixed(1)}%</span>
+            <span role="cell">{"percent" in item && typeof item.percent === "number" ? item.percent.toFixed(1) : percent(item.amount, totalForSlices).toFixed(1)}%</span>
           </div>
         </div>)}
       </div>
@@ -137,7 +146,6 @@ function PiePanel({ title, subtitle, total, data, colors, centreTitle, caption, 
 }
 
 export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
-  const [propertyMode, setPropertyMode] = useState<"items" | "payers">("items");
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [propertyBreakdownOpen, setPropertyBreakdownOpen] = useState(false);
   const propertyBreakdownRef = useRef<HTMLElement>(null);
@@ -177,32 +185,42 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
       previousFocus?.focus();
     };
   }, [propertyBreakdownOpen]);
-  const selfPay = summary.fundingSplit.selfBank + summary.fundingSplit.cash;
-  const propertySlices = propertyMode === "items"
-    ? data.components.map((item) => ({ id: item.id, name: item.name, group: item.group, amount: item.amount }))
-    : [
-      { id: "loan", name: "Loan", amount: summary.fundingSplit.loanDisbursed },
-      { id: "self-bank", name: "Self (bank)", amount: summary.fundingSplit.selfBank },
-      { id: "cash", name: "Cash", amount: summary.fundingSplit.cash },
-      { id: "still-to-pay", name: "Still to pay", amount: summary.fundingSplit.remainingToPay },
-    ];
+  const finalCost = popup?.finalCost ?? summary.totalOutlay;
+  const loanCoverage = popup?.agreement.loan ?? summary.sanctioned;
+  const selfPaidBank = popup?.whoPays.find((item) => item.id === "self-paid-bank")?.amount ?? summary.fundingSplit.selfBank;
+  const cashPaid = popup?.whoPays.find((item) => item.id === "cash")?.amount ?? summary.fundingSplit.cash;
+  const youPayTotal = popup?.youPayTotal ?? selfPaidBank + cashPaid;
+  const propertySlices = popup?.costSlices ?? data.components.map((item) => ({ ...item, percent: 0 }));
+  const payerSlices = popup?.whoPays ?? [
+    { id: "loan", name: "Loan", amount: summary.sanctioned, percent: 0 },
+    { id: "self-paid-bank", name: "Self-paid (bank)", amount: summary.fundingSplit.selfBank, percent: 0 },
+    { id: "cash", name: "Cash", amount: summary.fundingSplit.cash, percent: 0 },
+  ];
   const loanSlices = [
     { id: "repaid", name: "Principal repaid", amount: summary.principalRepaid },
     { id: "outstanding", name: "Outstanding principal", amount: summary.outstandingPrincipal },
     { id: "undisbursed", name: "Not yet disbursed", amount: summary.undisbursed },
     { id: "interest", name: "Interest paid", amount: summary.interestPaid },
   ];
+  const hasPropertyDetails = data.propertyBreakdown?.details !== null && data.propertyBreakdown?.details !== undefined;
+  const propertyEditHref = `/loans/${data.loan.id}/edit?tab=details`;
+  const costColors = (item: { group?: string }, index: number) => {
+    if (item.group === "CASH") return ["#6c5aa7", "#8979bd", "#a99bd0", "#c6bde0"][index % 4]!;
+    if (item.group === "ADDITIONAL" || item.group === "OUTSIDE_AGREEMENT") return extraColors[index % extraColors.length]!;
+    return agreementColors[index % agreementColors.length]!;
+  };
+  const payerColors = (_item: { group?: string }, index: number) => ["#286c63", "#5d8290", "#6c5aa7"][index % 3]!;
   const kpis = [
-    ["Total property cost", summary.totalOutlay, "Agreement plus extra costs"],
-    ["You pay yourself", selfPay, `${compact(summary.fundingSplit.selfBank)} from bank · ${compact(summary.fundingSplit.cash)} in cash`],
-    ["Loan covers", summary.disbursed, `${compact(summary.principalRepaid)} repaid so far`],
+    ["Total property cost", finalCost, "Final cost across all three tiers"],
+    ["You pay yourself", youPayTotal, `Of which cash: ${compact(cashPaid)}`],
+    ["Loan covers", loanCoverage, "Sanctioned amount inside the grand total"],
     ["Loan still owed", summary.outstandingPrincipal, "Outstanding principal"],
-    ["Interest paid so far", summary.interestPaid, "The bank's charge for lending"],
+    ["Interest paid so far", summary.interestPaid, "Interest paid to date"],
   ] as const;
 
   return <div className="beginner-dashboard">
     <section className="plain-summary-banner" aria-label="Loan summary">
-      <p>You are buying a property that costs <strong title={exact(summary.totalOutlay)}>{compact(summary.totalOutlay)}</strong> in total. <strong title={exact(summary.disbursed)}>{compact(summary.disbursed)}</strong> of it has been paid out by the loan, and you pay <strong title={exact(selfPay)}>{compact(selfPay)}</strong> yourself ({compact(summary.fundingSplit.cash)} in cash). The bank approved <strong title={exact(summary.sanctioned)}>{compact(summary.sanctioned)}</strong> and has paid <strong title={exact(summary.disbursed)}>{compact(summary.disbursed)}</strong> so far. You have repaid <strong title={exact(summary.principalRepaid)}>{compact(summary.principalRepaid)}</strong>, still owe <strong title={exact(summary.outstandingPrincipal)}>{compact(summary.outstandingPrincipal)}</strong>, and have paid <strong title={exact(summary.interestPaid)}>{compact(summary.interestPaid)}</strong> in interest.</p>
+      <p>The flat has a final cost of <strong title={exact(finalCost)}>{compact(finalCost)}</strong>. The three-way split is <strong title={exact(loanCoverage)}>Loan {compact(loanCoverage)}</strong>, <strong title={exact(selfPaidBank)}>self-paid through the bank {compact(selfPaidBank)}</strong>, and <strong title={exact(cashPaid)}>cash {compact(cashPaid)}</strong>. The bank approved <strong title={exact(summary.sanctioned)}>{compact(summary.sanctioned)}</strong> and has disbursed <strong title={exact(summary.disbursed)}>{compact(summary.disbursed)}</strong> so far. You have repaid <strong title={exact(summary.principalRepaid)}>{compact(summary.principalRepaid)}</strong>, still owe <strong title={exact(summary.outstandingPrincipal)}>{compact(summary.outstandingPrincipal)}</strong>, and have paid <strong title={exact(summary.interestPaid)}>{compact(summary.interestPaid)}</strong> in interest.</p>
       <button className="text-button" type="button" onClick={() => setGlossaryOpen(true)}>What do these terms mean?</button>
     </section>
     {summary.warnings.length > 0 && <div className="summary-warnings" role="status">{summary.warnings.map((warning) => <span key={warning}>{warning}</span>)}</div>}
@@ -213,20 +231,21 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
       <article className="beginner-kpi"><span>Next EMI <abbr title={glossaryTitle("EMI")}>ⓘ</abbr></span><strong title={summary.nextEmi ? exact(summary.nextEmi.amount) : undefined}>{summary.nextEmi ? compact(summary.nextEmi.amount) : "None"}</strong><small>{dateLabel(summary.nextEmi?.date ?? null)}</small></article>
     </section>
     <div className="beginner-pies">
-      <section className="beginner-pie-card">
-        <div className="beginner-chart-tabs" role="group" aria-label="Property cost chart grouping">
-          <button type="button" aria-pressed={propertyMode === "items"} onClick={() => setPropertyMode("items")}>By cost item</button>
-          <button type="button" aria-pressed={propertyMode === "payers"} onClick={() => setPropertyMode("payers")}>By who pays</button>
-        </div>
-        <PiePanel title="Property cost" subtitle="See how each cost adds up to the total outlay." total={summary.totalOutlay}
-          data={propertySlices} centreTitle="Total cost" emptyHref={`/loans/${data.loan.id}/edit`} colors={(item, index) => propertyMode === "payers" ? ["#286c63", "#5d8290", "#bd653e", "#d4d7ce"][index % 4]! : item.group === "OUTSIDE_AGREEMENT" ? extraColors[index % extraColors.length]! : agreementColors[index % agreementColors.length]!} />
-        {propertyMode === "items" && <div className="property-cost-subtotals"><span>Agreement value <strong title={exact(summary.agreementValue)}>{compact(summary.agreementValue)}</strong></span><span>Extra costs <strong title={exact(summary.extraCosts)}>{compact(summary.extraCosts)}</strong></span><span>Total <strong title={exact(summary.totalOutlay)}>{compact(summary.totalOutlay)}</strong></span></div>}
-        <div className="funding-bar-block"><div><strong>Who pays</strong><small>Funding split against total property cost</small></div>
-          <div className="funding-stack" role="img" aria-label={`Loan ${compact(summary.fundingSplit.loanDisbursed)}, self bank ${compact(summary.fundingSplit.selfBank)}, cash ${compact(summary.fundingSplit.cash)}, still to pay ${compact(summary.fundingSplit.remainingToPay)}`}>
-            {[[summary.fundingSplit.loanDisbursed, "#286c63", "Loan"], [summary.fundingSplit.selfBank, "#5d8290", "Self bank"], [summary.fundingSplit.cash, "#bd653e", "Cash"], [summary.fundingSplit.remainingToPay, "#d4d7ce", "Still to pay"]].map(([amount, color, name]) => <span key={String(name)} title={`${name}: ${exact(Number(amount))}`} style={{ width: `${percent(Number(amount), summary.totalOutlay)}%`, background: String(color) }} />)}
-          </div>
-        </div>
-      </section>
+      {hasPropertyDetails ? <>
+        <section className="beginner-pie-card">
+          <PiePanel title="What the flat costs" subtitle="Each slice is a cost item, grouped by the three tiers." total={finalCost}
+            data={propertySlices} centreTitle="Final cost" emptyHref={propertyEditHref} colors={costColors} />
+        </section>
+        <section className="beginner-pie-card">
+          <PiePanel title="Who pays" subtitle="See the loan, bank-paid share, and separate cash component." total={finalCost}
+            data={payerSlices} centreTitle="Final cost" emptyHref={propertyEditHref} colors={payerColors} />
+        </section>
+      </> : <section className="beginner-property-empty">
+        <span className="beginner-property-empty-icon" aria-hidden="true">⌂</span>
+        <h2>Property details are not set up</h2>
+        <p>Add the agreement value, additional charges, and cash component to see the cost and funding pies.</p>
+        <Link className="button button-primary" to={propertyEditHref}>Add property details</Link>
+      </section>}
       <section className="beginner-pie-card">
         <PiePanel title="Your loan" subtitle="Where the approved loan amount stands today." total={summary.sanctioned}
           data={loanSlices} centreTitle="Sanctioned" emptyHref={`/loans/${data.loan.id}/edit`} caption="Interest is an extra cost on top of the loan amount."

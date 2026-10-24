@@ -77,21 +77,33 @@ describe("Activity and property APIs", () => {
     });
     expect(dashboard.body.propertyBreakdown).toMatchObject({
       totals: { grandTotal: 1_000_000, finalCost: 1_100_000 },
-      fundingSplit: { loan: 9_000_000, selfPaidBank: 0, cash: 0, finalCost: 1_100_000 },
+      fundingSplit: { loan: 1_000_000, selfPaidBank: 100_000, cash: 0, finalCost: 1_100_000 },
       popup: {
-        agreement: { grandTotal: 1_000_000, gst: 0, loan: 9_000_000, paidByYou: 0 },
+        youPayTotal: 100_000,
+        costSlices: [
+          { id: expect.any(String), amount: 1_000_000, group: "AGREEMENT", percent: 90.9090909090909 },
+          { id: expect.any(String), amount: 100_000, group: "ADDITIONAL", percent: 9.090909090909092 },
+        ],
+        agreement: { grandTotal: 1_000_000, gst: 0, loan: 1_000_000, paidByYou: 0 },
         additional: { subtotal: 100_000, totalBeforeCash: 1_100_000 },
         cash: { subtotal: 0 },
         finalCost: 1_100_000,
         whoPays: [
-          { id: "loan", amount: 9_000_000 },
-          { id: "self-paid-bank", amount: 0 },
+          { id: "loan", amount: 1_000_000 },
+          { id: "self-paid-bank", amount: 100_000 },
           { id: "cash", amount: 0 },
         ],
         propertyFacts: { superBuiltUpSft: 1450, parkingSlots: 2 },
         checkDifferences: 3,
       },
     });
+    const dashboardPopup = dashboard.body.propertyBreakdown.popup as {
+      finalCost: number;
+      costSlices: { amount: number }[];
+      whoPays: { amount: number }[];
+    };
+    expect(dashboardPopup.costSlices.reduce((total, item) => total + item.amount, 0)).toBe(dashboardPopup.finalCost);
+    expect(dashboardPopup.whoPays.reduce((total, item) => total + item.amount, 0)).toBe(dashboardPopup.finalCost);
     const exported = await request(app).get("/api/export").expect(200);
     expect(exported.body.activityEntries.length).toBeGreaterThan(0);
     expect(exported.body.propertyCostComponents).toHaveLength(2);

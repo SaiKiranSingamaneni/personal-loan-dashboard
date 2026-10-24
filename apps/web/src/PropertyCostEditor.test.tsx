@@ -24,9 +24,9 @@ const fixtureProperty = {
   components: [
     { id: "base", name: "Base price", group: "AGREEMENT", kind: "BASE_PRICE", amount: 1_241_638_125, note: null },
     { id: "gst", name: "GST", group: "AGREEMENT", kind: "GST", amount: 65_349_375, note: "As per demand letter" },
-    { id: "corpus", name: "Corpus fund", group: "OUTSIDE_AGREEMENT", kind: "CORPUS_FUND", amount: 29_370_800, note: null },
-    { id: "docs", name: "Documentation + deposit", group: "OUTSIDE_AGREEMENT", kind: "DOCUMENTATION_DEPOSIT", amount: 9_490_000, note: null },
-    { id: "cash", name: "Cash component", group: "OUTSIDE_AGREEMENT", kind: "CASH_PAYMENT", amount: 342_000_000, note: "Separate cash payment" },
+    { id: "corpus", name: "Corpus fund", group: "ADDITIONAL", kind: "CORPUS_FUND", amount: 29_370_800, note: null },
+    { id: "docs", name: "Documentation + deposit", group: "ADDITIONAL", kind: "DOCUMENTATION_DEPOSIT", amount: 9_490_000, note: null },
+    { id: "cash", name: "Cash component", group: "CASH", kind: "CASH_PAYMENT", amount: 342_000_000, note: "Separate cash payment" },
   ],
 };
 

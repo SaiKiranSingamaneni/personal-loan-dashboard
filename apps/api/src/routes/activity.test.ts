@@ -65,7 +65,10 @@ describe("Activity and property APIs", () => {
     expect(property.body.invoiceGrandTotal).toBe(900_000);
     expect(property.body.invoiceMismatch).toBe(100_000);
     expect(property.body.details).toMatchObject({ unitLabel: "Flat 1402", superBuiltUpSft: 1450, ratePerSft: 500_000 });
-    expect((await request(app).get(`/api/loans/${loanId}/property`)).body.details.notedGrandTotal).toBe(900_000);
+    const propertyRead = await request(app).get(`/api/loans/${loanId}/property`).expect(200);
+    expect(propertyRead.body.details.notedGrandTotal).toBe(900_000);
+    expect(propertyRead.body.components.find((item: { name: string }) => item.name === "Interiors"))
+      .toMatchObject({ group: "ADDITIONAL", kind: "OTHER_ADDITIONAL" });
 
     await request(app).post(`/api/loans/${loanId}/activity`).send({
       type: "LOAN_DISBURSEMENT", date: "2025-01-03", title: "First draw", amount: 250_000,

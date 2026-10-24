@@ -63,12 +63,21 @@ All money is stored as integer paise. Schedule interest is rounded to the neares
 
 ## Loan sections
 
-- **Dashboard** explains the total property cost, loan funding, principal still owed, interest paid, and the next EMI. Property cost is split between agreement items and extra costs outside the agreement. The builder invoice total is optional and a mismatch is shown as a warning.
+- **Dashboard** starts with six summary cards and a plain-language, three-way funding summary. Three pies show the cost of the flat by item, who pays (loan, self-paid through the bank, and cash), and the existing loan breakdown. Select the information button on **Total property cost** for the full tier-by-tier amount and funding breakdown.
 - **Activity** records self contributions, loan disbursements, EMI and extra-EMI payments, and rate changes. Automatic historical EMI entries are marked `Auto`; editing one preserves it as a user-edited entry. Filters, totals, and pagination are applied by the API. Deleted entries can be restored from **Trash**.
 - **Analysis** contains the existing balance, principal/interest, cumulative interest, payment history, prepayment comparison, what-if simulator, and amortization schedule views.
-- **Loan details** edits the loan terms and the agreement/extra-cost item lists. Amounts are entered in rupees and stored as integer paise. GST is entered as a cost amount; no GST rate is assumed.
+- **Loan details** edits loan terms and property details across four cards: property facts, the agreement grand total, additional charges, and a separate cash component. The loan is part of the agreement grand total; self-paid bank funding covers the rest of that total and additional charges; cash is separate. The final cost is the sum of all three tiers. Amounts are entered in rupees and stored as integer paise. GST is entered as a cost amount; no GST rate is assumed. Area, agreement totals, and note totals are cross-checks that show warnings without blocking saves.
 
-The SQLite migrations preserve the existing payment, funding, and rate-change records while copying their financial history into the unified Activity model. Legacy source tables remain available for backward-compatible APIs and imports. Version-1 JSON imports remain accepted; newly exported files also contain property costs and unified Activity records.
+Property cost terms use these plain-language meanings in the dashboard glossary. Actual treatment can vary by contract, so check your agreement:
+
+- **Grand total:** Usually the amount stated for the agreement, including GST; check your agreement.
+- **GST:** Usually tax charged on the agreement value; check the amount on your agreement or demand letter.
+- **Corpus fund:** Usually a shared reserve collected for the building or community; check your agreement.
+- **Documentation + deposit:** Usually paperwork charges and deposits collected separately; check whether each item is included in your agreement.
+- **Cash component:** Usually a separate payment toward the flat; check your agreement and receipts.
+- **Super built-up area:** Usually the agreement area that includes a share of common spaces; check the area definition in your agreement.
+
+The SQLite migrations preserve the existing payment, funding, rate-change, and property-cost records while converting older property groups into the agreement, additional, and cash tiers. Legacy source tables and version-1 JSON imports remain supported; newly exported files also contain property details, tiered cost components, and unified Activity records.
 
 ## Data, backups, and restore
 

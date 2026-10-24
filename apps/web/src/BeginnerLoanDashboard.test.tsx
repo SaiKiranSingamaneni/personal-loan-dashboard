@@ -84,8 +84,12 @@ describe("beginner loan dashboard", () => {
     expect(screen.queryByRole("button", { name: "By who pays" })).toBeNull();
     expect(screen.getByText(/three-way split is/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "What do these terms mean?" }));
-    expect(screen.getByRole("dialog", { name: "Loan terms" })).toBeTruthy();
+    const glossary = screen.getByRole("dialog", { name: "Loan terms" });
+    expect(glossary).toBeTruthy();
     expect(screen.getByText("Outstanding is the principal you still owe.")).toBeTruthy();
+    const glossaryTerms = Array.from(glossary.querySelectorAll("dt")).map((term) => term.textContent);
+    expect(glossaryTerms).toEqual(expect.arrayContaining(["Grand total", "GST", "Corpus fund", "Documentation + deposit", "Cash component", "Super built-up area"]));
+    expect(screen.getByText("Usually the amount stated for the agreement, including GST; check your agreement.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "View all activity" }).getAttribute("href")).toBe("/?tab=activity");
   });
 
@@ -99,9 +103,12 @@ describe("beginner loan dashboard", () => {
     expect(screen.getByText("Base price (before GST)")).toBeTruthy();
     expect(screen.getByText("Documentation + deposit")).toBeTruthy();
     expect(screen.getByText("Final cost of the flat")).toBeTruthy();
+    const breakdownLabels = Array.from(dialog.querySelectorAll(".breakdown-line > span"));
+    expect(breakdownLabels.find((label) => label.textContent === "GST")?.getAttribute("title")).toContain("check the amount");
+    expect(breakdownLabels.find((label) => label.textContent === "Grand total")?.getAttribute("title")).toContain("check your agreement");
     expect(screen.getByRole("table", { name: "Who pays" })).toBeTruthy();
     expect(screen.getByText(/2 differences · view in Loan details/)).toBeTruthy();
-    expect(screen.getByText(/1,450 sft super built-up area/)).toBeTruthy();
+    expect(screen.getByText("super built-up area").getAttribute("title")).toContain("check the area definition");
 
     const close = screen.getByRole("button", { name: "Close property cost breakdown" });
     expect(document.activeElement).toBe(close);

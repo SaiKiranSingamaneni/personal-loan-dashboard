@@ -5,7 +5,7 @@ import { apiRequest } from "./api.js";
 import { amountInWords, formatIndianMoneyInput, isValidIndianMoneyInput } from "./inputFormatting.js";
 
 type CostRow = { id?: string; name: string; group: PropertyCostGroup; kind: PropertyCostKind; amount: string; note: string };
-type ApiCostRow = Omit<PropertyCostComponent, "group" | "kind" | "amount"> & { id: string; group: string; kind: string; amount: number };
+type ApiCostRow = Omit<PropertyCostComponent, "group" | "kind" | "amount"> & { id: string; group: PropertyCostGroup; kind: string; amount: number };
 type PropertyData = {
   details: { unitLabel: string | null; superBuiltUpSft: number; carpetSft: number | null; ratePerSft: number; parkingSlots: number; parkingCharges: number | null; notedGrandTotal: number | null; notedTotalBeforeCash: number | null; notedFinalCost: number | null } | null;
   components: ApiCostRow[];
@@ -16,10 +16,8 @@ const initialDetails: DetailsForm = { unitLabel: "", superBuiltUpSft: "", carpet
 const validKinds: readonly string[] = ["BASE_PRICE", "GST", "PARKING", "CLUB_HOUSE", "OTHER_AGREEMENT", "CORPUS_FUND", "DOCUMENTATION_DEPOSIT", "OTHER_ADDITIONAL", "CASH_PAYMENT"];
 
 function kindFor(kind: string, group: string): PropertyCostKind {
-  if (kind === "IN_HAND_CASH") return "CASH_PAYMENT";
-  if (kind === "OTHER" || kind === "INTERIORS" || kind === "MAINTENANCE_DEPOSIT") return group === "AGREEMENT" ? "OTHER_AGREEMENT" : "OTHER_ADDITIONAL";
   if (validKinds.includes(kind)) return kind as PropertyCostKind;
-  return group === "AGREEMENT" ? "OTHER_AGREEMENT" : "OTHER_ADDITIONAL";
+  return group === "AGREEMENT" ? "OTHER_AGREEMENT" : group === "CASH" ? "CASH_PAYMENT" : "OTHER_ADDITIONAL";
 }
 
 function moneyText(paise: number | null | undefined): string {
@@ -59,7 +57,7 @@ export function PropertyCostEditor({ loanId, sanctionedLoan = 0 }: { loanId: str
     const nextRows: CostRow[] = data.components.map((item) => ({
       id: item.id,
       name: item.name,
-      group: (item.group === "OUTSIDE_AGREEMENT" ? (item.kind === "IN_HAND_CASH" || item.kind === "CASH_PAYMENT" ? "CASH" : "ADDITIONAL") : item.group) as PropertyCostGroup,
+      group: item.group,
       kind: kindFor(item.kind, item.group),
       amount: moneyText(item.amount),
       note: item.note ?? "",

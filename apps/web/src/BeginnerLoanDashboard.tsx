@@ -17,7 +17,7 @@ interface DashboardSummary {
   fundingSplit: { loanDisbursed: number; selfBank: number; cash: number; remainingToPay: number };
   warnings: string[];
 }
-interface PropertyComponent { id: string; name: string; group: "AGREEMENT" | "ADDITIONAL" | "CASH" | "OUTSIDE_AGREEMENT"; kind?: string; amount: number; note?: string | null }
+interface PropertyComponent { id: string; name: string; group: "AGREEMENT" | "ADDITIONAL" | "CASH"; kind?: string; amount: number; note?: string | null }
 interface ActivityRow { id: string; title: string; date: string; amount: number | null; type: string; notes: string | null }
 interface PopupCostItem { id: string; name: string; amount: number; note?: string | null }
 interface CostSlice extends PopupCostItem { group: string; kind: string | null; percent: number }
@@ -51,7 +51,12 @@ const info: Record<string, string> = {
   Sanctioned: "Sanctioned is the maximum amount the bank approved.",
   Outstanding: "Outstanding is the principal you still owe.",
   Interest: "Interest is the extra amount the bank charges for lending you money.",
-  "Corpus fund": "A corpus fund is a one-time shared reserve collected by the building or community.",
+  "Grand total": "Usually the amount stated for the agreement, including GST; check your agreement.",
+  GST: "Usually tax charged on the agreement value; check the amount on your agreement or demand letter.",
+  "Corpus fund": "Usually a shared reserve collected for the building or community; check your agreement.",
+  "Documentation + deposit": "Usually paperwork charges and deposits collected separately; check whether each item is included in your agreement.",
+  "Cash component": "Usually a separate payment toward the flat; check your agreement and receipts.",
+  "Super built-up area": "Usually the agreement area that includes a share of common spaces; check the area definition in your agreement.",
   "Pre-EMI": "Pre-EMI is interest charged on the amount already paid out before regular installments begin.",
 };
 
@@ -81,13 +86,18 @@ function definitionFor(label: string): string | undefined {
   if (label.includes("Disbursed")) return glossaryTitle("Disbursed");
   if (label.includes("Sanctioned")) return glossaryTitle("Sanctioned");
   if (label.includes("Interest")) return glossaryTitle("Interest");
+  if (label.includes("Grand total")) return glossaryTitle("Grand total");
+  if (label.includes("GST")) return glossaryTitle("GST");
   if (label.includes("Corpus fund")) return glossaryTitle("Corpus fund");
+  if (label.includes("Documentation + deposit")) return glossaryTitle("Documentation + deposit");
+  if (label.includes("Cash")) return glossaryTitle("Cash component");
+  if (label.includes("Super built-up area")) return glossaryTitle("Super built-up area");
   if (label.includes("Pre-EMI")) return glossaryTitle("Pre-EMI");
   return undefined;
 }
 function propertyGroupHeading(group: string | undefined, previousGroup: string | undefined) {
   if (group === previousGroup) return null;
-  const heading = group === "AGREEMENT" ? "Tier 1 · Grand total" : group === "ADDITIONAL" || group === "OUTSIDE_AGREEMENT" ? "Tier 2 · Additional charges" : group === "CASH" ? "Tier 3 · Cash component" : "";
+  const heading = group === "AGREEMENT" ? "Tier 1 · Grand total" : group === "ADDITIONAL" ? "Tier 2 · Additional charges" : group === "CASH" ? "Tier 3 · Cash component" : "";
   return heading ? <strong className="beginner-legend-group">{heading}</strong> : null;
 }
 
@@ -206,7 +216,7 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
   const propertyEditHref = `/loans/${data.loan.id}/edit?tab=details`;
   const costColors = (item: { group?: string }, index: number) => {
     if (item.group === "CASH") return ["#6c5aa7", "#8979bd", "#a99bd0", "#c6bde0"][index % 4]!;
-    if (item.group === "ADDITIONAL" || item.group === "OUTSIDE_AGREEMENT") return extraColors[index % extraColors.length]!;
+    if (item.group === "ADDITIONAL") return extraColors[index % extraColors.length]!;
     return agreementColors[index % agreementColors.length]!;
   };
   const payerColors = (_item: { group?: string }, index: number) => ["#286c63", "#5d8290", "#6c5aa7"][index % 3]!;
@@ -296,7 +306,7 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
             </tbody></table>
           </section>
           <footer className="property-breakdown-footer">
-            {popup.propertyFacts ? <p>Property facts: {new Intl.NumberFormat("en-IN").format(popup.propertyFacts.superBuiltUpSft)} sft super built-up area · {breakdownAmount(popup.propertyFacts.ratePerSft)} per sft · {popup.propertyFacts.parkingSlots} parking slots</p> : <p>Property facts have not been added yet.</p>}
+            {popup.propertyFacts ? <p>Property facts: {new Intl.NumberFormat("en-IN").format(popup.propertyFacts.superBuiltUpSft)} sft <span title={glossaryTitle("Super built-up area")}>super built-up area</span> · {breakdownAmount(popup.propertyFacts.ratePerSft)} per sft · {popup.propertyFacts.parkingSlots} parking slots</p> : <p>Property facts have not been added yet.</p>}
             <p>Cross-check: <Link to={`/loans/${data.loan.id}/edit?tab=details#property-cross-check`} onClick={() => setPropertyBreakdownOpen(false)}>{popup.checkDifferences === 0 ? "All checks match" : `${popup.checkDifferences} ${popup.checkDifferences === 1 ? "difference" : "differences"}`} · view in Loan details</Link></p>
             <Link className="button button-primary" to={`/loans/${data.loan.id}/edit?tab=details`} onClick={() => setPropertyBreakdownOpen(false)}>Edit property details</Link>
           </footer>
@@ -313,7 +323,7 @@ function BreakdownRows({ items, fallbackName, emptyText }: { items: PopupCostIte
 }
 
 function BreakdownLine({ label, amount, note, strong = false }: { label: string; amount: number; note?: string | null; strong?: boolean }) {
-  return <div className={`breakdown-line${strong ? " is-strong" : ""}`}><span>{label}{note && <small>{note}</small>}</span><strong>{breakdownAmount(amount)}</strong></div>;
+  return <div className={`breakdown-line${strong ? " is-strong" : ""}`}><span title={definitionFor(label)}>{label}{note && <small>{note}</small>}</span><strong>{breakdownAmount(amount)}</strong></div>;
 }
 
 function Progress({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {

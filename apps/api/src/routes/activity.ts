@@ -226,11 +226,7 @@ export function createActivityRouter(repositories: RepositorySet): Router {
     const loanId = param(request, "loanId");
     const loan = requireLoan(repositories, loanId);
     const details = repositories.children.propertyDetails.getByLoan(loanId);
-    response.json({ details: details ?? null, components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
-      ...item,
-      group: item.group === "ADDITIONAL" || item.group === "CASH" ? "OUTSIDE_AGREEMENT" : item.group,
-      kind: item.kind === "OTHER_ADDITIONAL" || item.kind === "OTHER_AGREEMENT" ? "OTHER" : item.kind,
-    })), invoiceGrandTotal: loan.invoiceGrandTotal });
+    response.json({ details: details ?? null, components: repositories.children.propertyCosts.listByLoan(loanId), invoiceGrandTotal: loan.invoiceGrandTotal });
   });
 
   router.put("/loans/:loanId/property", validateBody(propertyUpdateSchema), (request, response) => {

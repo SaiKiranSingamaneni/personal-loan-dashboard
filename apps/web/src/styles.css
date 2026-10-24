@@ -459,9 +459,6 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
 .property-breakdown-trigger:hover { border-color: var(--accent); background: var(--accent-soft); }
 .beginner-pies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .beginner-pie-card { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.beginner-chart-tabs { display: flex; gap: 4px; margin: 0 0 14px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
-.beginner-chart-tabs button { flex: 1; min-width: 0; padding: 7px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; font-weight: 650; }
-.beginner-chart-tabs button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgb(24 45 38 / 10%); }
 .beginner-pie-panel > header, .beginner-recent-activity > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .beginner-pie-panel > header h2, .beginner-recent-activity h2 { margin: 0; font-size: 13px; }
 .beginner-pie-panel > header p, .beginner-recent-activity header p { margin: 4px 0 0; color: var(--muted); font-size: 9px; }
@@ -489,15 +486,6 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
 .beginner-property-empty h2 { margin: 0; font-size: 15px; }
 .beginner-property-empty p { max-width: 390px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .beginner-property-empty-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 50%; background: var(--surface-soft); color: var(--accent); font-size: 24px; }
-.property-cost-subtotals { display: grid; gap: 6px; padding: 9px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.property-cost-subtotals span { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 9px; }
-.property-cost-subtotals strong { color: var(--text); }
-.funding-bar-block { display: grid; gap: 8px; margin-top: 12px; }
-.funding-bar-block > div:first-child { display: grid; gap: 3px; }
-.funding-bar-block > div:first-child strong { font-size: 10px; }
-.funding-bar-block small { color: var(--muted); font-size: 8px; }
-.funding-stack { display: flex; width: 100%; height: 13px; overflow: hidden; border-radius: 4px; background: var(--surface-soft); }
-.funding-stack span { min-width: 0; height: 100%; }
 .beginner-progress-list { display: grid; gap: 13px; margin-top: 10px; }
 .beginner-progress { display: grid; gap: 6px; }
 .beginner-progress > div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; }
@@ -589,24 +577,9 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
 :root[data-theme="dark"] .form-warnings { border-color: #6c583a; background: #352c1f; color: #edd09c; }
 .form-summary-error { margin: 0; }
 .form-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 3px 0 12px; }
-.property-cost-editor { display: grid; gap: 18px; margin-top: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
-.property-cost-editor .chart-heading { margin: 0; }
-.property-cost-group { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
-.property-cost-group-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.property-cost-group-heading h3 { margin: 0; font-size: 12px; }
-.property-cost-group-heading strong { font-size: 12px; }
-.property-cost-table-head, .property-cost-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(120px, .7fr) minmax(150px, 1fr) 34px; gap: 9px; align-items: center; }
-.property-cost-table-head { color: var(--muted); font-size: 9px; font-weight: 700; }
-.property-cost-row input { min-width: 0; width: 100%; min-height: 37px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text); font: 500 11px ui-sans-serif, system-ui, sans-serif; }
 .property-add-row { justify-self: start; }
-.property-invoice-row { display: grid; grid-template-columns: minmax(220px, 360px) 1fr; gap: 14px; align-items: end; padding-top: 16px; border-top: 1px solid var(--line); }
 .notice-warning { margin: 0; padding: 10px 12px; border: 1px solid #f0d9b8; border-radius: 8px; background: #fff9ef; color: #8e6428; font-size: 10px; line-height: 1.45; }
 :root[data-theme="dark"] .notice-warning { border-color: #6b583d; background: #352c20; color: #efd09a; }
-.property-cost-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 15px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.property-cost-totals > div { display: grid; gap: 6px; }
-.property-cost-totals span { color: var(--muted); font-size: 9px; }
-.property-cost-totals strong { font-size: 12px; }
-.property-save-success { margin: 0; color: #28724f; font-size: 10px; }
 .funding-derived-single { grid-template-columns: 1fr; }
 .checkbox-field-wrap { display: grid; align-content: start; gap: 6px; }
 .checkbox-field-wrap .checkbox-field { display: flex; align-items: center; gap: 9px; min-height: 39px; }
@@ -693,18 +666,11 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
   .plain-summary-banner p { font-size: 11px; }
   .beginner-pie-card { padding: 13px; }
   .form-section { padding: 17px 15px; }
-  .property-cost-editor { padding: 17px 14px; }
   .property-editor-layout { grid-template-columns: 1fr; }
   .property-crosscheck { position: static; grid-row: 1; }
   .property-cost-row { grid-template-columns: minmax(0, 1fr); }
   .property-cost-row > button { justify-self: start; margin-top: 0; }
   .property-cost-fields { grid-template-columns: 1fr; }
-  .property-cost-table-head { display: none; }
-  .property-cost-row { grid-template-columns: minmax(0, 1fr) 34px; }
-  .property-cost-row input:nth-of-type(2) { grid-column: 1; grid-row: 2; }
-  .property-cost-row input:nth-of-type(3) { grid-column: 1; grid-row: 3; }
-  .property-cost-row .icon-button { grid-column: 2; grid-row: 1; }
-  .property-invoice-row, .property-cost-totals { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .derived-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .funding-derived { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; }

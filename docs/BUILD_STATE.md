@@ -81,6 +81,7 @@ Current task: Complete - Last updated: 2026-10-23
 - 2026-10-23 - Ignore only the regenerated `exportedAt` metadata when asserting a full import/export round trip - exports intentionally record the time of each export, while all persisted loan data must match.
 - 2026-10-23 - Omit the optional Playwright runner because it is not installed and no browser binary is available; retain the existing React Testing Library end-to-end smoke flow - avoids adding a separate browser runtime for the same main flow.
 - 2026-10-24 - Cap the allocated loan share at the grand total when sanction exceeds the agreement value, while retaining the over-sanction cross-check warning - keeps the loan, bank-paid, and cash shares reconciled to final cost even for invalid inputs.
+- 2026-10-24 - Serve canonical agreement/additional/cash groups from property reads while retaining legacy normalization for older imports and writes - the current editor and dashboard use the three-tier model while existing exports remain supported.
 
 ## Blockers
 - none
@@ -99,7 +100,7 @@ Current task: Complete - Last updated: 2026-10-23
 - [x] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
 ## Property cost rework tasks
-Current task: S-T7 - Last updated: 2026-10-24
+Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 
 - [x] S-T1 Data model changes and migration (three groups, PropertyDetails, noted totals).
 - [x] S-T2 Engine: tiers, funding split, cross-checks, dashboard summary, tests with the fixture.
@@ -107,12 +108,13 @@ Current task: S-T7 - Last updated: 2026-10-24
 - [x] S-T4 Loan form and property form with hints, Indian number input, live cross-check panel.
 - [x] S-T5 Property cost breakdown popup and the (i) icon.
 - [x] S-T6 KPI cards, the two new pies, summary banner update, empty states.
-- [ ] S-T7 Glossary and tooltips, remove the old two-group editor and the old property pie toggle, update README.
+- [x] S-T7 Glossary and tooltips, remove the old two-group editor and the old property pie toggle, update README.
 
 ### Property cost rework gate
-- [ ] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
+- [x] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
 
 ## Session log
+- 2026-10-24 - S-T7 - Added six cautious property glossary definitions and hover tooltips, made property reads return canonical tier groups, removed obsolete two-group/toggle styles, updated the README and tracker; `npm run verify` passes (111 tests) - all S-T1 through S-T7 are complete; tag `property-rework-complete` after commit.
 - 2026-10-24 - S-T6 - Replaced the old property cost toggle with three responsive pies, six property and loan KPIs, the three-way summary, and an empty property state; API supplies cost slices and reconciled payment percentages; `npm run verify` passes (111 tests) - S-T7 remains.
 - 2026-10-24 - S-T5 - Added the property cost information button and accessible breakdown dialog with focus trapping, Esc/outside/Close handling, tier line items, funding table, property facts and cross-check link; expanded dashboard API popup data; `npm run verify` passes (109 tests) - S-T6 is next.
 - 2026-10-24 - S-T4 - Reworked loan inputs with accessible italic hints, EMI-basis visibility, Indian grouped money entry and words; replaced the old property editor with four tier cards, live cross-checks, notes and exact-paise saving; `npm run verify` passes (108 tests) - S-T5 is next.

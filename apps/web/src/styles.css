@@ -451,9 +451,12 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
 .beginner-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--line); }
 .beginner-kpi { display: grid; min-width: 0; min-height: 112px; align-content: start; gap: 8px; padding: 14px 15px; background: var(--surface); }
 .beginner-kpi > span { color: var(--muted); font-size: 10px; font-weight: 650; }
+.beginner-kpi-label { display: flex; align-items: center; gap: 5px; }
 .beginner-kpi > strong { overflow: hidden; color: var(--text); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .beginner-kpi small { color: var(--muted); font-size: 9px; line-height: 1.45; }
 .beginner-kpi abbr { text-decoration: none; cursor: help; }
+.property-breakdown-trigger { display: inline-grid; width: 18px; height: 18px; flex: 0 0 18px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--accent); cursor: pointer; font: 700 10px Inter, ui-sans-serif, system-ui, sans-serif; }
+.property-breakdown-trigger:hover { border-color: var(--accent); background: var(--accent-soft); }
 .beginner-pies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .beginner-pie-card { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .beginner-chart-tabs { display: flex; gap: 4px; margin: 0 0 14px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
@@ -515,6 +518,37 @@ html[data-theme="dark"] .schedule-status.status-missed { background: #492b2a; co
 .glossary-drawer dl div { display: grid; gap: 4px; }
 .glossary-drawer dt { font-size: 10px; font-weight: 700; }
 .glossary-drawer dd { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.property-breakdown-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; place-items: center; padding: 16px; background: rgb(12 20 30 / 48%); }
+.property-breakdown-dialog { display: grid; width: min(760px, 100%); max-height: min(900px, calc(100vh - 32px)); overflow: auto; gap: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: 0 24px 70px rgb(0 0 0 / 24%); }
+.property-breakdown-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+.property-breakdown-dialog > header h2 { margin: 4px 0 0; font-size: 18px; }
+.property-breakdown-close { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; font-size: 19px; }
+.property-breakdown-dialog :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.breakdown-section { display: grid; gap: 7px; }
+.breakdown-section h3 { margin: 0 0 2px; font-size: 12px; }
+.breakdown-line, .breakdown-subline { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 10px; }
+.breakdown-line > span { display: grid; gap: 3px; }
+.breakdown-line small { color: var(--muted); font-size: 9px; font-weight: 400; }
+.breakdown-line > strong, .breakdown-subline > strong { font-size: 10px; text-align: right; white-space: nowrap; }
+.breakdown-line.is-strong { margin-top: 2px; padding-top: 9px; border-top: 1px solid var(--line); border-bottom: 0; font-weight: 700; }
+.breakdown-line.is-strong > strong { font-size: 11px; }
+.breakdown-subline { padding: 2px 0; border: 0; color: var(--muted); font-size: 9px; }
+.breakdown-subline strong { color: var(--text); }
+.breakdown-empty-line, .breakdown-empty p { margin: 0; color: var(--muted); font-size: 10px; }
+.breakdown-final-cost { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 0; border-top: 2px solid var(--text); border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 750; }
+.breakdown-final-cost strong { font-size: 16px; white-space: nowrap; }
+.breakdown-payers table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.breakdown-payers th, .breakdown-payers td { padding: 8px 7px; border-bottom: 1px solid var(--line); text-align: right; }
+.breakdown-payers th:first-child, .breakdown-payers tbody th { text-align: left; }
+.breakdown-payers thead { color: var(--muted); font-size: 9px; }
+.breakdown-table-total { font-weight: 750; }
+.property-breakdown-footer { display: grid; gap: 9px; padding-top: 12px; border-top: 1px solid var(--line); }
+.property-breakdown-footer p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.property-breakdown-footer a:not(.button) { color: var(--accent); text-decoration: underline; }
+.property-breakdown-footer .button { justify-self: start; }
+.breakdown-close-footer { justify-self: end; }
+.breakdown-empty { display: grid; gap: 12px; }
+.breakdown-empty .button { justify-self: start; }
 
 .loan-form-page { max-width: 980px; margin: 0 auto; }
 .form-page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }

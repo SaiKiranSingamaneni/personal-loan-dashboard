@@ -78,6 +78,19 @@ describe("Activity and property APIs", () => {
     expect(dashboard.body.propertyBreakdown).toMatchObject({
       totals: { grandTotal: 1_000_000, finalCost: 1_100_000 },
       fundingSplit: { loan: 9_000_000, selfPaidBank: 0, cash: 0, finalCost: 1_100_000 },
+      popup: {
+        agreement: { grandTotal: 1_000_000, gst: 0, loan: 9_000_000, paidByYou: 0 },
+        additional: { subtotal: 100_000, totalBeforeCash: 1_100_000 },
+        cash: { subtotal: 0 },
+        finalCost: 1_100_000,
+        whoPays: [
+          { id: "loan", amount: 9_000_000 },
+          { id: "self-paid-bank", amount: 0 },
+          { id: "cash", amount: 0 },
+        ],
+        propertyFacts: { superBuiltUpSft: 1450, parkingSlots: 2 },
+        checkDifferences: 3,
+      },
     });
     const exported = await request(app).get("/api/export").expect(200);
     expect(exported.body.activityEntries.length).toBeGreaterThan(0);

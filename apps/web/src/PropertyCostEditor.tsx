@@ -263,7 +263,7 @@ export function PropertyCostEditor({ loanId, sanctionedLoan = 0 }: { loanId: str
         </fieldset>
       </div>
 
-      <aside className="property-crosscheck" aria-label="Property cross-checks">
+      <aside className="property-crosscheck" id="property-cross-check" aria-label="Property cross-checks">
         <h3>Cross-check</h3>
         {derived.checks.map((item) => <div className={`crosscheck-row${item.ok ? " is-ok" : " is-warning"}`} key={item.id}>
           <span aria-hidden="true">{item.ok ? "✓" : "!"}</span>

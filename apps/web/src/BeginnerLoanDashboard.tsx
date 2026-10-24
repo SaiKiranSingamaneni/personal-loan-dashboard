@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { asPaise, formatIndianMoney } from "@loan-dashboard/shared";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -17,14 +17,25 @@ interface DashboardSummary {
   fundingSplit: { loanDisbursed: number; selfBank: number; cash: number; remainingToPay: number };
   warnings: string[];
 }
-interface PropertyComponent { id: string; name: string; group: "AGREEMENT" | "OUTSIDE_AGREEMENT"; amount: number }
+interface PropertyComponent { id: string; name: string; group: "AGREEMENT" | "ADDITIONAL" | "CASH" | "OUTSIDE_AGREEMENT"; kind?: string; amount: number; note?: string | null }
 interface ActivityRow { id: string; title: string; date: string; amount: number | null; type: string; notes: string | null }
+interface PopupCostItem { id: string; name: string; amount: number; note?: string | null }
+interface PropertyCostPopup {
+  agreement: { basePrice: PopupCostItem[]; otherCharges: PopupCostItem[]; gst: number; preGstSubtotal: number; grandTotal: number; loan: number; paidByYou: number };
+  additional: { items: PopupCostItem[]; subtotal: number; totalBeforeCash: number };
+  cash: { items: PopupCostItem[]; subtotal: number };
+  finalCost: number;
+  whoPays: { id: string; name: string; amount: number; percent: number }[];
+  propertyFacts: { superBuiltUpSft: number; ratePerSft: number; parkingSlots: number } | null;
+  checkDifferences: number;
+}
 interface DashboardResponse {
   loan: { id: string; name: string };
   summary: DashboardSummary;
   components: PropertyComponent[];
   recentActivity: ActivityRow[];
   invoiceMismatch: { amount: number; direction: string } | null;
+  propertyBreakdown?: { popup: PropertyCostPopup };
 }
 
 const agreementColors = ["#286c63", "#418d7d", "#63a99a", "#8bc5b7", "#b2ddd3", "#1f504a"];
@@ -42,6 +53,10 @@ const info: Record<string, string> = {
 };
 
 function exact(value: number): string { return formatIndianMoney(asPaise(value)); }
+function breakdownAmount(value: number): string {
+  const formatted = exact(value);
+  return value % 100 === 0 ? formatted.replace(/\.00$/, "") : formatted;
+}
 function compact(value: number): string {
   const rupees = value / 100;
   if (rupees >= 10_000_000) return `Rs ${(rupees / 10_000_000).toFixed(2)} crore`;
@@ -124,7 +139,44 @@ function PiePanel({ title, subtitle, total, data, colors, centreTitle, caption, 
 export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
   const [propertyMode, setPropertyMode] = useState<"items" | "payers">("items");
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [propertyBreakdownOpen, setPropertyBreakdownOpen] = useState(false);
+  const propertyBreakdownRef = useRef<HTMLElement>(null);
   const summary = data.summary;
+  const popup = data.propertyBreakdown?.popup;
+
+  useEffect(() => {
+    if (!propertyBreakdownOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = propertyBreakdownRef.current;
+    const closeButton = dialog?.querySelector<HTMLElement>("[data-dialog-close]");
+    closeButton?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPropertyBreakdownOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || dialog === null) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable.at(-1)!;
+      if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [propertyBreakdownOpen]);
   const selfPay = summary.fundingSplit.selfBank + summary.fundingSplit.cash;
   const propertySlices = propertyMode === "items"
     ? data.components.map((item) => ({ id: item.id, name: item.name, group: item.group, amount: item.amount }))
@@ -156,7 +208,7 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
     {summary.warnings.length > 0 && <div className="summary-warnings" role="status">{summary.warnings.map((warning) => <span key={warning}>{warning}</span>)}</div>}
     <section className="beginner-kpis" aria-label="Loan summary amounts">
       {kpis.map(([label, value, description]) => <article className="beginner-kpi" key={label}>
-        <span title={definitionFor(label)}>{label}{definitionFor(label) && <abbr aria-hidden="true"> ⓘ</abbr>}</span><strong title={exact(value)}>{compact(value)}</strong><small>{description}</small>
+        <span className="beginner-kpi-label" title={definitionFor(label)}>{label}{definitionFor(label) && <abbr aria-hidden="true"> ⓘ</abbr>}{label === "Total property cost" && <button className="property-breakdown-trigger" type="button" aria-label="Show property cost breakdown" aria-haspopup="dialog" onClick={() => setPropertyBreakdownOpen(true)}>i</button>}</span><strong title={exact(value)}>{compact(value)}</strong><small>{description}</small>
       </article>)}
       <article className="beginner-kpi"><span>Next EMI <abbr title={glossaryTitle("EMI")}>ⓘ</abbr></span><strong title={summary.nextEmi ? exact(summary.nextEmi.amount) : undefined}>{summary.nextEmi ? compact(summary.nextEmi.amount) : "None"}</strong><small>{dateLabel(summary.nextEmi?.date ?? null)}</small></article>
     </section>
@@ -192,7 +244,57 @@ export function BeginnerLoanDashboard({ data }: { data: DashboardResponse }) {
     {glossaryOpen && <div className="glossary-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setGlossaryOpen(false); }}>
       <aside className="glossary-drawer" role="dialog" aria-modal="true" aria-labelledby="glossary-heading"><header><h2 id="glossary-heading">Loan terms</h2><button type="button" aria-label="Close glossary" onClick={() => setGlossaryOpen(false)}>×</button></header><dl>{Object.entries(info).map(([term, definition]) => <div key={term}><dt>{term}</dt><dd>{definition}</dd></div>)}</dl></aside>
     </div>}
+    {propertyBreakdownOpen && <div className="property-breakdown-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPropertyBreakdownOpen(false); }}>
+      <section className="property-breakdown-dialog" role="dialog" aria-modal="true" aria-labelledby="property-breakdown-heading" ref={propertyBreakdownRef}>
+        <header><div><span className="eyebrow">PROPERTY COST</span><h2 id="property-breakdown-heading">Property cost breakdown</h2></div><button type="button" data-dialog-close className="property-breakdown-close" aria-label="Close property cost breakdown" onClick={() => setPropertyBreakdownOpen(false)}>×</button></header>
+        {popup ? <>
+          <section className="breakdown-section" aria-labelledby="breakdown-grand-heading">
+            <h3 id="breakdown-grand-heading">A. Grand total (incl. GST)</h3>
+            <BreakdownRows items={popup.agreement.basePrice} fallbackName="Base price (before GST)" />
+            <BreakdownRows items={popup.agreement.otherCharges} />
+            <BreakdownLine label="GST" amount={popup.agreement.gst} />
+            <BreakdownLine label="Grand total" amount={popup.agreement.grandTotal} strong />
+            <div className="breakdown-subline"><span>of which Loan</span><strong>{breakdownAmount(popup.agreement.loan)}</strong></div>
+            <div className="breakdown-subline"><span>of which paid by you</span><strong>{breakdownAmount(popup.agreement.paidByYou)}</strong></div>
+          </section>
+          <section className="breakdown-section" aria-labelledby="breakdown-additional-heading">
+            <h3 id="breakdown-additional-heading">B. Additional charges (outside the grand total)</h3>
+            <BreakdownRows items={popup.additional.items} emptyText="No additional charges recorded." />
+            <BreakdownLine label="Additional charges subtotal" amount={popup.additional.subtotal} />
+            <BreakdownLine label="Total before cash" amount={popup.additional.totalBeforeCash} strong />
+          </section>
+          <section className="breakdown-section" aria-labelledby="breakdown-cash-heading">
+            <h3 id="breakdown-cash-heading">C. Cash component</h3>
+            <BreakdownRows items={popup.cash.items} fallbackName="Cash component" />
+            <BreakdownLine label="Cash total" amount={popup.cash.subtotal} strong />
+          </section>
+          <div className="breakdown-final-cost"><span>Final cost of the flat</span><strong>{breakdownAmount(popup.finalCost)}</strong></div>
+          <section className="breakdown-section breakdown-payers" aria-labelledby="breakdown-payers-heading">
+            <h3 id="breakdown-payers-heading">Who pays</h3>
+            <table aria-label="Who pays"><thead><tr><th scope="col">Source</th><th scope="col">Amount</th><th scope="col">Share</th></tr></thead><tbody>
+              {popup.whoPays.map((item) => <tr key={item.id}><th scope="row">{item.name}</th><td>{breakdownAmount(item.amount)}</td><td>{item.percent.toFixed(1)}%</td></tr>)}
+              <tr className="breakdown-table-total"><th scope="row">Final cost</th><td>{breakdownAmount(popup.finalCost)}</td><td>100%</td></tr>
+            </tbody></table>
+          </section>
+          <footer className="property-breakdown-footer">
+            {popup.propertyFacts ? <p>Property facts: {new Intl.NumberFormat("en-IN").format(popup.propertyFacts.superBuiltUpSft)} sft super built-up area · {breakdownAmount(popup.propertyFacts.ratePerSft)} per sft · {popup.propertyFacts.parkingSlots} parking slots</p> : <p>Property facts have not been added yet.</p>}
+            <p>Cross-check: <Link to={`/loans/${data.loan.id}/edit?tab=details#property-cross-check`} onClick={() => setPropertyBreakdownOpen(false)}>{popup.checkDifferences === 0 ? "All checks match" : `${popup.checkDifferences} ${popup.checkDifferences === 1 ? "difference" : "differences"}`} · view in Loan details</Link></p>
+            <Link className="button button-primary" to={`/loans/${data.loan.id}/edit?tab=details`} onClick={() => setPropertyBreakdownOpen(false)}>Edit property details</Link>
+          </footer>
+        </> : <div className="breakdown-empty"><p>Property breakdown data is not available.</p><Link className="button button-primary" to={`/loans/${data.loan.id}/edit?tab=details`} onClick={() => setPropertyBreakdownOpen(false)}>Edit property details</Link></div>}
+        <button type="button" className="button button-secondary breakdown-close-footer" onClick={() => setPropertyBreakdownOpen(false)}>Close</button>
+      </section>
+    </div>}
   </div>;
+}
+
+function BreakdownRows({ items, fallbackName, emptyText }: { items: PopupCostItem[]; fallbackName?: string; emptyText?: string }) {
+  if (items.length === 0) return emptyText ? <p className="breakdown-empty-line">{emptyText}</p> : fallbackName ? <BreakdownLine label={fallbackName} amount={0} /> : null;
+  return <>{items.map((item) => <BreakdownLine key={item.id} label={item.name} amount={item.amount} note={item.note} />)}</>;
+}
+
+function BreakdownLine({ label, amount, note, strong = false }: { label: string; amount: number; note?: string | null; strong?: boolean }) {
+  return <div className={`breakdown-line${strong ? " is-strong" : ""}`}><span>{label}{note && <small>{note}</small>}</span><strong>{breakdownAmount(amount)}</strong></div>;
 }
 
 function Progress({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {

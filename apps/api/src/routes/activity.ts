@@ -295,22 +295,59 @@ export function createActivityRouter(repositories: RepositorySet): Router {
   router.get("/loans/:loanId/dashboard", (request, response) => {
     const loanId = param(request, "loanId");
     const dashboard = loanDashboard(repositories, loanId);
+    const propertyTotals = dashboard.summary.propertyCost;
+    const propertyDetails = repositories.children.propertyDetails.getByLoan(loanId) ?? null;
+    const propertyComponents = repositories.children.propertyCosts.listByLoan(loanId);
+    const agreementComponents = propertyComponents.filter((item) => item.group === "AGREEMENT");
+    const additionalComponents = propertyComponents.filter((item) => item.group === "ADDITIONAL");
+    const cashComponents = propertyComponents.filter((item) => item.group === "CASH");
+    const checks = propertyTotals.checks;
+    const amountPercent = (amount: number) => propertyTotals.finalCost <= 0 ? 0 : amount / propertyTotals.finalCost * 100;
     response.json({
       loan: dashboard.loan,
       summary: dashboard.summary,
       invoiceMismatch: dashboard.invoiceMismatch,
-      components: repositories.children.propertyCosts.listByLoan(loanId),
+      components: propertyComponents,
       propertyBreakdown: {
-        details: repositories.children.propertyDetails.getByLoan(loanId) ?? null,
-        components: repositories.children.propertyCosts.listByLoan(loanId),
-        totals: dashboard.summary.propertyCost,
+        details: propertyDetails,
+        components: propertyComponents,
+        totals: propertyTotals,
         fundingSplit: {
-          loan: dashboard.summary.propertyCost.loanShare,
-          selfPaidBank: dashboard.summary.propertyCost.selfPaidBank,
-          cash: dashboard.summary.propertyCost.cashTotal,
-          finalCost: dashboard.summary.propertyCost.finalCost,
+          loan: propertyTotals.loanShare,
+          selfPaidBank: propertyTotals.selfPaidBank,
+          cash: propertyTotals.cashTotal,
+          finalCost: propertyTotals.finalCost,
         },
-        checks: dashboard.summary.propertyCost.checks,
+        checks,
+        popup: {
+          agreement: {
+            basePrice: agreementComponents.filter((item) => item.kind === "BASE_PRICE"),
+            otherCharges: agreementComponents.filter((item) => item.kind !== "BASE_PRICE" && item.kind !== "GST"),
+            gst: propertyTotals.gst,
+            preGstSubtotal: propertyTotals.preGstSubtotal,
+            grandTotal: propertyTotals.grandTotal,
+            loan: propertyTotals.loanShare,
+            paidByYou: Math.max(0, propertyTotals.grandTotal - propertyTotals.loanShare),
+          },
+          additional: {
+            items: additionalComponents,
+            subtotal: propertyTotals.additionalCharges,
+            totalBeforeCash: propertyTotals.totalBeforeCash,
+          },
+          cash: { items: cashComponents, subtotal: propertyTotals.cashTotal },
+          finalCost: propertyTotals.finalCost,
+          whoPays: [
+            { id: "loan", name: "Loan", amount: propertyTotals.loanShare, percent: amountPercent(propertyTotals.loanShare) },
+            { id: "self-paid-bank", name: "Self-paid (bank)", amount: propertyTotals.selfPaidBank, percent: amountPercent(propertyTotals.selfPaidBank) },
+            { id: "cash", name: "Cash", amount: propertyTotals.cashTotal, percent: amountPercent(propertyTotals.cashTotal) },
+          ],
+          propertyFacts: propertyDetails === null ? null : {
+            superBuiltUpSft: propertyDetails.superBuiltUpSft,
+            ratePerSft: propertyDetails.ratePerSft,
+            parkingSlots: propertyDetails.parkingSlots,
+          },
+          checkDifferences: checks.filter((item) => !item.ok).length,
+        },
       },
       recentActivity: dashboard.entries.filter((item) => item.deletedAt == null)
         .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),

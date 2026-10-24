@@ -114,7 +114,7 @@ Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 - [x] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
 
 ## Database hardening tasks
-- [ ] H-T0 Audit current database paths, durability, backups, migrations, browser storage, IDs and cloud-sync location; document in `docs/DB_AUDIT.md` before code changes.
+- [x] H-T0 Audit current database paths, durability, backups, migrations, browser storage, IDs and cloud-sync location; document in `docs/DB_AUDIT.md` before code changes.
 - [ ] H-T1 Resolve one fixed-root database location from `DB_DIR`; add relocation command, repository-local `db/` layout and Settings path/warnings.
 - [ ] H-T2 Enforce SQLite durability pragmas, single-instance lock, graceful shutdown, immediate write transactions, disk checks and optimistic concurrency.
 - [ ] H-T3 Add startup/daily integrity checks, degraded read-only mode and health/restore workflow.
@@ -143,6 +143,7 @@ Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 - [ ] Do not begin V-T1 until H-T9 and the `db-hardening-complete` tag are complete.
 
 ## Session log
+- 2026-10-24 - H-T0 - Audited CWD-relative database resolution, WAL/foreign-key-only pragmas, SQLite online backup after migrations, browser storage, ID formats, and current local filesystem evidence; findings recorded in `docs/DB_AUDIT.md` with no code changes.
 - 2026-10-24 - S-T7 - Added six cautious property glossary definitions and hover tooltips, made property reads return canonical tier groups, removed obsolete two-group/toggle styles, updated the README and tracker; `npm run verify` passes (111 tests) - all S-T1 through S-T7 are complete; tag `property-rework-complete` after commit.
 - 2026-10-24 - S-T6 - Replaced the old property cost toggle with three responsive pies, six property and loan KPIs, the three-way summary, and an empty property state; API supplies cost slices and reconciled payment percentages; `npm run verify` passes (111 tests) - S-T7 remains.
 - 2026-10-24 - S-T5 - Added the property cost information button and accessible breakdown dialog with focus trapping, Esc/outside/Close handling, tier line items, funding table, property facts and cross-check link; expanded dashboard API popup data; `npm run verify` passes (109 tests) - S-T6 is next.

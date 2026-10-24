@@ -97,6 +97,20 @@ Current task: Complete - Last updated: 2026-10-23
 ### Rewrite phase gate
 - [x] `npm run verify` passes; tag `rewrite-complete` after R-T1 through R-T8 are committed.
 
+## Property cost rework tasks
+Current task: S-T1 - Last updated: 2026-10-24
+
+- [ ] S-T1 Data model changes and migration (three groups, PropertyDetails, noted totals).
+- [ ] S-T2 Engine: tiers, funding split, cross-checks, dashboard summary, tests with the fixture.
+- [ ] S-T3 API: property endpoint and dashboard payload, integration tests.
+- [ ] S-T4 Loan form and property form with hints, Indian number input, live cross-check panel.
+- [ ] S-T5 Property cost breakdown popup and the (i) icon.
+- [ ] S-T6 KPI cards, the two new pies, summary banner update, empty states.
+- [ ] S-T7 Glossary and tooltips, remove the old two-group editor and the old property pie toggle, update README.
+
+### Property cost rework gate
+- [ ] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
+
 ## Session log
 - 2026-10-24 - Startup migration fix - Restrict legacy AUTO EMI promotion to scheduled-period records and skip dates already owned by an AUTO row; same-date collision regression test and full `npm run verify` pass (100 tests).
 - 2026-10-23 - R-T8 follow-up - Removed legacy aggregate funding edits from existing-loan details so Activity remains the funding source of truth; final `npm run verify` passes (100 tests) and the web build succeeds.

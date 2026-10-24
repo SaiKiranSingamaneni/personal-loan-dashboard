@@ -7,6 +7,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 export const loans = sqliteTable("loans", {
+    version: integer("version").notNull().default(1),
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   lender: text("lender").notNull(),
@@ -44,6 +45,7 @@ export const loans = sqliteTable("loans", {
 export const propertyCostComponents = sqliteTable(
   "property_cost_components",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -60,6 +62,7 @@ export const propertyCostComponents = sqliteTable(
 );
 
 export const propertyDetails = sqliteTable("property_details", {
+    version: integer("version").notNull().default(1),
   loanId: text("loan_id").primaryKey().references(() => loans.id, { onDelete: "cascade" }),
   unitLabel: text("unit_label"),
   superBuiltUpSft: real("super_built_up_sft").notNull().default(0),
@@ -77,6 +80,7 @@ export const propertyDetails = sqliteTable("property_details", {
 export const activityEntries = sqliteTable(
   "activity_entries",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -119,6 +123,7 @@ export const activityEntries = sqliteTable(
 export const disbursements = sqliteTable(
   "disbursements",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -136,6 +141,7 @@ export const disbursements = sqliteTable(
 export const contributions = sqliteTable(
   "contributions",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -153,6 +159,7 @@ export const contributions = sqliteTable(
 export const rateChanges = sqliteTable(
   "rate_changes",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -170,6 +177,7 @@ export const rateChanges = sqliteTable(
 export const payments = sqliteTable(
   "payments",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()
@@ -197,6 +205,7 @@ export const payments = sqliteTable(
 export const notes = sqliteTable(
   "notes",
   {
+    version: integer("version").notNull().default(1),
     id: text("id").primaryKey(),
     loanId: text("loan_id")
       .notNull()

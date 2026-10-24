@@ -38,6 +38,18 @@ function routeId(request: Request): string {
   return id;
 }
 
+function expectedVersion(request: Request, currentVersion: number): number {
+  const value = request.header("If-Match")?.replace(/^W\//, "").replaceAll('"', "");
+  if (value === undefined) return currentVersion;
+  const version = Number(value);
+  if (!Number.isSafeInteger(version) || version < 1) throw new HttpError(400, "INVALID_VERSION", "If-Match must contain a positive record version.");
+  return version;
+}
+
+function staleWrite(): HttpError {
+  return new HttpError(409, "STALE_WRITE", "This entry was changed elsewhere. Reload to see the latest.");
+}
+
 function firstDueDate(startDate: string, dueDay: number) {
   const start = asIsoDate(startDate);
   const followingMonth = addMonths(start, 1);
@@ -382,7 +394,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
       const updatedLoan = repositories.loans.update(id, {
         ...loanFields,
         updatedAt: now,
-      });
+      }, expectedVersion(request, loan.version));
       if (initialOwnContribution !== undefined) {
         for (const item of repositories.children.contributions.listByLoan(id)) {
           repositories.children.contributions.softDelete(item.id, now);
@@ -420,6 +432,7 @@ export function createLoansRouter(repositories: RepositorySet): Router {
       return updatedLoan;
     });
     if (updated === undefined) {
+      if (repositories.loans.getById(id) !== undefined) throw staleWrite();
       throw new HttpError(404, "LOAN_NOT_FOUND", "Loan was not found.");
     }
     reconcileLoanAutoEmis(repositories, id);
@@ -440,8 +453,10 @@ export function createLoansRouter(repositories: RepositorySet): Router {
     const removed = repositories.loans.softDelete(
       id,
       new Date().toISOString(),
+      expectedVersion(request, getLoan(repositories, id).version),
     );
     if (!removed) {
+      if (repositories.loans.getById(id) !== undefined) throw staleWrite();
       throw new HttpError(404, "LOAN_NOT_FOUND", "Loan was not found.");
     }
     response.status(204).end();

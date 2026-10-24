@@ -54,18 +54,23 @@ function validateRelations(data: ExportData): void {
 
 export function exportAllData(database: Database.Database): ExportData {
   const db = drizzle(database, { schema });
+  const withoutVersion = <T extends { version: number }>(rows: T[]) => rows.map((row) => {
+    const output: Record<string, unknown> = { ...row };
+    delete output.version;
+    return output;
+  });
   return exportDataSchema.parse({
     formatVersion: 1,
     exportedAt: new Date().toISOString(),
-    loans: db.select().from(loans).all(),
-    propertyCostComponents: db.select().from(propertyCostComponents).all(),
-    propertyDetails: db.select().from(propertyDetails).all(),
-    activityEntries: db.select().from(activityEntries).all(),
-    disbursements: db.select().from(disbursements).all(),
-    contributions: db.select().from(contributions).all(),
-    rateChanges: db.select().from(rateChanges).all(),
-    payments: db.select().from(payments).all(),
-    notes: db.select().from(notes).all(),
+    loans: withoutVersion(db.select().from(loans).all()),
+    propertyCostComponents: withoutVersion(db.select().from(propertyCostComponents).all()),
+    propertyDetails: withoutVersion(db.select().from(propertyDetails).all()),
+    activityEntries: withoutVersion(db.select().from(activityEntries).all()),
+    disbursements: withoutVersion(db.select().from(disbursements).all()),
+    contributions: withoutVersion(db.select().from(contributions).all()),
+    rateChanges: withoutVersion(db.select().from(rateChanges).all()),
+    payments: withoutVersion(db.select().from(payments).all()),
+    notes: withoutVersion(db.select().from(notes).all()),
   });
 }
 
@@ -116,6 +121,6 @@ export function importAllData(
     if (data.rateChanges.length > 0) tx.insert(rateChanges).values(data.rateChanges).run();
     if (data.payments.length > 0) tx.insert(payments).values(data.payments).run();
     if (data.notes.length > 0) tx.insert(notes).values(data.notes).run();
-  });
+  }, { behavior: "immediate" });
   return { preview: false, counts };
 }

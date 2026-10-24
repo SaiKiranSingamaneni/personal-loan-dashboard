@@ -1,4 +1,5 @@
 import { mkdirSync, readdirSync, rmSync } from "node:fs";
+import { assertDiskSpace } from "./connection.js";
 import { dirname, join, resolve } from "node:path";
 import type Database from "better-sqlite3";
 
@@ -24,6 +25,7 @@ export class BackupService {
 
   async create(now = new Date()): Promise<string> {
     mkdirSync(this.backupDirectory, { recursive: true });
+    assertDiskSpace(this.databasePath, "database backup");
     const year = now.getUTCFullYear().toString().padStart(4, "0");
     const month = (now.getUTCMonth() + 1).toString().padStart(2, "0");
     const day = now.getUTCDate().toString().padStart(2, "0");

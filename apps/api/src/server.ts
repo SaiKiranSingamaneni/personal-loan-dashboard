@@ -4,7 +4,7 @@ import { createSqliteRepositories } from "./db/repositories.js";
 import { BackupService } from "./db/backup.js";
 import { fileURLToPath } from "node:url";
 import { reconcileAllLoanAutoEmis } from "./services/autoEmis.js";
-import { resolveDatabasePaths } from "./db/paths.js";
+import { acquireDatabaseLock, resolveDatabasePaths } from "./db/paths.js";
 
 export interface ApiRuntime {
   app: ReturnType<typeof createApp>;
@@ -39,7 +39,10 @@ export async function initializeApi(
 }
 
 export async function startServer(): Promise<void> {
-  const runtime = await initializeApi();
+  const paths = resolveDatabasePaths();
+  const releaseLock = acquireDatabaseLock(paths.dataDirectory);
+  let runtime: ApiRuntime;
+  try { runtime = await initializeApi(); } catch (error) { releaseLock(); throw error; }
   process.stdout.write(`Database path: ${runtime.connection.databasePath}\n`);
   const port = Number(process.env.PORT ?? 3001);
   const dailyBackup = setInterval(() => {
@@ -61,8 +64,18 @@ export async function startServer(): Promise<void> {
     clearInterval(dailyBackup);
     clearInterval(dailyAutoEmi);
     server.close(() => {
-      runtime.close();
-      process.exit(0);
+      void (async () => {
+        try {
+          runtime.connection.client.pragma("wal_checkpoint(TRUNCATE)");
+          await runtime.backups.create();
+        } catch (error) {
+          process.stderr.write(`Final database snapshot failed: ${String(error)}\n`);
+        } finally {
+          runtime.close();
+          releaseLock();
+          process.exit(0);
+        }
+      })();
     });
   };
   process.once("SIGINT", close);

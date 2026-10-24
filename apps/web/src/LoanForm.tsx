@@ -24,6 +24,7 @@ import {
 
 interface LoanRecord {
   id: string;
+  version: number;
   name: string;
   lender: string;
   loanType: LoanFormValues["loanType"];
@@ -257,6 +258,7 @@ export function LoanFormPage({ embedded = false }: { embedded?: boolean } = {}) 
       return isEditing
         ? apiRequest<LoanRecord>(`/api/loans/${loanId}`, {
             method: "PUT",
+            headers: { "If-Match": String(loanQuery.data?.version ?? 1) },
             body: JSON.stringify(payload),
           })
         : apiRequest<LoanRecord>("/api/loans", {

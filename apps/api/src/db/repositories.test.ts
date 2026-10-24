@@ -37,7 +37,7 @@ describe("SQLite repositories", () => {
     runMigrations(connection.client);
     expect(
       connection.client.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get(),
-    ).toEqual({ count: 8 });
+    ).toEqual({ count: 9 });
     createLoan();
     expect(repositories.loans.getById("loan-1")?.name).toBe("Test loan");
     expect(repositories.loans.listActive()).toHaveLength(1);
@@ -89,6 +89,17 @@ describe("SQLite repositories", () => {
     expect(repositories.children.payments.listByLoan("loan-1")).toHaveLength(0);
     expect(repositories.children.payments.restore("payment-1")).toBe(true);
     expect(repositories.children.payments.getById("payment-1")?.status).toBe("paid");
+  });
+
+  it("increments record versions and rejects stale updates and deletes", () => {
+    createLoan();
+    const first = repositories.loans.getById("loan-1")!;
+    expect(first.version).toBe(1);
+    const updated = repositories.loans.update("loan-1", { name: "Renamed" }, first.version)!;
+    expect(updated.version).toBe(2);
+    expect(repositories.loans.update("loan-1", { name: "Stale overwrite" }, first.version)).toBeUndefined();
+    expect(repositories.loans.softDelete("loan-1", "2026-02-01T00:00:00.000Z", first.version)).toBe(false);
+    expect(repositories.loans.getById("loan-1")?.name).toBe("Renamed");
   });
 
   it("rolls back all repository writes when a transaction fails", () => {

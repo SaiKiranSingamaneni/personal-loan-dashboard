@@ -1,4 +1,4 @@
-import { accessSync, constants, existsSync, mkdirSync, statSync } from "node:fs";
+import { accessSync, constants, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, parse, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -146,4 +146,30 @@ export function rowCounts(databasePath: string): Record<string, number> {
   } finally {
     database.close();
   }
+}
+export function acquireDatabaseLock(dataDirectory: string): () => void {
+  const lockPath = join(dataDirectory, ".lock");
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      writeFileSync(lockPath, `${process.pid}\n`, { flag: "wx", mode: 0o600 });
+      return () => {
+        try {
+          const pid = Number(readFileSync(lockPath, "utf8").trim());
+          if (pid === process.pid) rmSync(lockPath, { force: true });
+        } catch { /* already released */ }
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const pid = Number(readFileSync(lockPath, "utf8").trim());
+      let alive = Number.isInteger(pid) && pid > 0;
+      if (alive) {
+        try { process.kill(pid, 0); } catch (probeError) {
+          alive = (probeError as NodeJS.ErrnoException).code === "EPERM";
+        }
+      }
+      if (alive) throw new Error(`Another API process (PID ${pid}) owns the database lock at ${lockPath}.`);
+      rmSync(lockPath, { force: true });
+    }
+  }
+  throw new Error(`Could not acquire database lock at ${lockPath}.`);
 }

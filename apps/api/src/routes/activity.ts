@@ -183,6 +183,9 @@ export function createActivityRouter(repositories: RepositorySet): Router {
     merged.type = type;
     const parsed = activityEntryCreateSchema.parse(merged);
     const now = new Date().toISOString();
+    const rawVersion = request.header("If-Match")?.replace(/^W\//, "").replaceAll('"', "");
+    const expected = rawVersion === undefined ? existing.version : Number(rawVersion);
+    if (!Number.isSafeInteger(expected) || expected < 1) throw new HttpError(400, "INVALID_VERSION", "If-Match must contain a positive record version.");
     const updated = repositories.children.activityEntries.update(id, {
       ...parsed,
       amount: parsed.type === "RATE_CHANGE" ? null : parsed.amount,
@@ -201,7 +204,8 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       interestPart: existing.interestPart,
       principalPart: existing.principalPart,
       updatedAt: now,
-    });
+    }, expected);
+    if (updated === undefined) throw new HttpError(409, "STALE_WRITE", "This entry was changed elsewhere. Reload to see the latest.");
     reconcileLoanAutoEmis(repositories, existing.loanId);
     response.json(updated);
   });
@@ -210,7 +214,10 @@ export function createActivityRouter(repositories: RepositorySet): Router {
     const id = param(request, "id");
     const existing = repositories.children.activityEntries.getById(id);
     if (existing === undefined) throw new HttpError(404, "ENTRY_NOT_FOUND", "Activity entry was not found.");
-    repositories.children.activityEntries.softDelete(id, new Date().toISOString());
+    const rawVersion = request.header("If-Match")?.replace(/^W\//, "").replaceAll('"', "");
+    const expected = rawVersion === undefined ? existing.version : Number(rawVersion);
+    if (!Number.isSafeInteger(expected) || expected < 1) throw new HttpError(400, "INVALID_VERSION", "If-Match must contain a positive record version.");
+    if (!repositories.children.activityEntries.softDelete(id, new Date().toISOString(), expected)) throw new HttpError(409, "STALE_WRITE", "This entry was changed elsewhere. Reload to see the latest.");
     response.status(204).end();
   });
 

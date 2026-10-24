@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statfsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
@@ -29,11 +29,20 @@ export function runMigrations(
       continue;
     }
     const sql = readFileSync(resolve(migrationsPath, name), "utf8");
+    assertDiskSpace(database.name, `migration ${name}`);
     database.transaction(() => {
       database.exec(sql);
       addMigration.run(name);
-    })();
+    }).immediate();
   }
+}
+
+export function assertDiskSpace(databasePath: string, operation: string): number {
+  if (databasePath === ":memory:") return Number.MAX_SAFE_INTEGER;
+  const stats = statfsSync(resolve(databasePath).replace(/[\\/][^\\/]+$/, ""));
+  const freeMb = Math.floor(stats.bavail * stats.bsize / (1024 * 1024));
+  if (freeMb < 500) process.stderr.write(`Warning: only ${freeMb} MB free before ${operation}.\n`);
+  return freeMb;
 }
 
 export interface SqliteConnection {
@@ -54,6 +63,8 @@ export function openSqliteDatabase(
   try {
     client.pragma("foreign_keys = ON");
     client.pragma("journal_mode = WAL");
+    client.pragma("synchronous = FULL");
+    client.pragma("busy_timeout = 5000");
     runMigrations(client);
     if (isFirstDatabaseFile) process.stdout.write(`Created database file ${resolvedPath}\n`);
   } catch (error) {

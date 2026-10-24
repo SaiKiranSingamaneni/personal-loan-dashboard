@@ -39,6 +39,7 @@ describe("payment and loan entry endpoints", () => {
       (await request(app).put(`/api/disbursements/${disbursementId}`).send({ note: "Updated" }))
         .body.note,
     ).toBe("Updated");
+    expect((await request(app).put(`/api/disbursements/${disbursementId}`).set("If-Match", '"1"').send({ note: "Stale edit" })).status).toBe(409);
 
     const contribution = await request(app)
       .post(`/api/loans/${loanId}/contributions`)

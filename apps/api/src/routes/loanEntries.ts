@@ -24,6 +24,7 @@ interface ChildRecord {
   id: string;
   loanId: string;
   deletedAt: string | null;
+  version: number;
 }
 
 interface ResourceConfig<
@@ -50,6 +51,20 @@ function requiredParam(request: Request, name: string): string {
     throw new HttpError(400, "INVALID_ID", `A single ${name} is required.`);
   }
   return value;
+}
+
+function expectedVersion(request: Request, current: { version: number }): number {
+  const value = request.header("If-Match")?.replace(/^W\//, "").replaceAll('"', "");
+  if (value === undefined) return current.version;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new HttpError(400, "INVALID_VERSION", "If-Match must contain a positive record version.");
+  }
+  return parsed;
+}
+
+function staleWrite(): HttpError {
+  return new HttpError(409, "STALE_WRITE", "This entry was changed elsewhere. Reload to see the latest.");
 }
 
 function createResourceRoutes<
@@ -97,8 +112,9 @@ function createResourceRoutes<
     }
     const input = parseInput(config.updateSchema, request.body);
     config.beforeUpdate?.(input, existing);
-    const updated = config.repository.update(id, config.makeUpdate(input, new Date().toISOString()));
+    const updated = config.repository.update(id, config.makeUpdate(input, new Date().toISOString()), expectedVersion(request, existing));
     if (updated === undefined) {
+      if (config.repository.getById(id) !== undefined) throw staleWrite();
       throw new HttpError(404, "ENTRY_NOT_FOUND", "Entry was not found.");
     }
     response.json(updated);
@@ -108,7 +124,9 @@ function createResourceRoutes<
     if (config.repository.getById(id) === undefined) {
       throw new HttpError(404, "ENTRY_NOT_FOUND", "Entry was not found.");
     }
-    config.repository.softDelete(id, new Date().toISOString());
+    const existing = config.repository.getById(id);
+    if (existing === undefined) throw new HttpError(404, "ENTRY_NOT_FOUND", "Entry was not found.");
+    if (!config.repository.softDelete(id, new Date().toISOString(), expectedVersion(request, existing))) throw staleWrite();
     response.status(204).end();
   });
   return { collection, item };

@@ -6,6 +6,7 @@ import { apiRequest, ApiClientError } from "./api.js";
 export type ActivityEntryType = "SELF_CONTRIBUTION" | "LOAN_DISBURSEMENT" | "EMI" | "EXTRA_EMI" | "RATE_CHANGE";
 export interface ActivityFormEntry {
   id: string;
+  version?: number;
   type: ActivityEntryType;
   origin?: "USER" | "AUTO";
   date: string;
@@ -120,6 +121,7 @@ export function ActivityEntryForm({ loanId, editingEntry = null, onEditComplete 
         ? `/api/loans/${loanId}/activity`
         : `/api/activity/${editingEntry.id}`, {
         method: editingEntry === null ? "POST" : "PUT",
+        ...(editingEntry === null ? {} : { headers: { "If-Match": String(editingEntry.version ?? 1) } }),
         body: JSON.stringify(payload),
       });
     },

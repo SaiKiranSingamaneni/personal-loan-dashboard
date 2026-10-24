@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   type SQLiteColumn,
   type SQLiteTable,
@@ -25,8 +25,8 @@ export interface EntityRepository<TRecord, TCreate, TUpdate> {
   getDeletedById(id: string): TRecord | undefined;
   getById(id: string): TRecord | undefined;
   create(value: TCreate): TRecord;
-  update(id: string, value: TUpdate): TRecord | undefined;
-  softDelete(id: string, deletedAt: string): boolean;
+  update(id: string, value: TUpdate, expectedVersion?: number): TRecord | undefined;
+  softDelete(id: string, deletedAt: string, expectedVersion?: number): boolean;
   restore(id: string): boolean;
   hardDelete(id: string): boolean;
 }
@@ -135,32 +135,37 @@ function createEntityRepository<TTable extends TableWithSoftDelete>(
         .get() as InferSelectModel<TTable> | undefined,
     create: (value) =>
       db.insert(table).values(value).returning().get() as InferSelectModel<TTable>,
-    update: (id, value) => {
+    update: (id, value, expectedVersion) => {
+      const current = db.select({ version: (columns.version as SQLiteColumn) }).from(table).where(and(eq(columns.id, id), isNull(columns.deletedAt))).get() as { version?: number } | undefined;
+      if (current === undefined) return undefined;
+      const version = expectedVersion ?? current.version ?? 1;
       const updated = db
         .update(table)
-        .set({ ...value, updatedAt: new Date().toISOString() })
-        .where(and(eq(columns.id, id), isNull(columns.deletedAt)))
+        .set({ ...value, version: version + 1, updatedAt: new Date().toISOString() } as Partial<InferInsertModel<TTable>>)
+        .where(and(eq(columns.id, id), eq(columns.version as SQLiteColumn, version), isNull(columns.deletedAt)))
         .returning()
         .get();
       return updated as InferSelectModel<TTable> | undefined;
     },
-    softDelete: (id, deletedAt) =>
-      db
-        .update(table)
-        .set({ deletedAt, updatedAt: deletedAt } as Partial<InferInsertModel<TTable>>)
-        .where(and(eq(columns.id, id), isNull(columns.deletedAt)))
-        .run().changes > 0,
-    restore: (id) =>
-      db
-        .update(table)
-        .set(
-          { deletedAt: null, updatedAt: new Date().toISOString() } as Partial<
-            InferInsertModel<TTable>
-          >,
-        )
-        .where(eq(columns.id, id))
-        .run().changes > 0,
-    hardDelete: (id) => db.delete(table).where(eq(columns.id, id)).run().changes > 0,
+    softDelete: (id, deletedAt, expectedVersion) => {
+      const current = db.select({ version: columns.version as SQLiteColumn }).from(table).where(and(eq(columns.id, id), isNull(columns.deletedAt))).get() as { version?: number } | undefined;
+      const version = expectedVersion ?? current?.version ?? 1;
+      return current !== undefined && db.update(table)
+        .set({ deletedAt, version: version + 1, updatedAt: deletedAt } as Partial<InferInsertModel<TTable>>)
+        .where(and(eq(columns.id, id), eq(columns.version as SQLiteColumn, version), isNull(columns.deletedAt)))
+        .run().changes > 0;
+    },
+    restore: (id) => {
+      const current = db.select({ version: columns.version as SQLiteColumn }).from(table).where(eq(columns.id, id)).get() as { version?: number } | undefined;
+      return current !== undefined && db.update(table)
+        .set({ deletedAt: null, version: (current.version ?? 0) + 1, updatedAt: new Date().toISOString() } as Partial<InferInsertModel<TTable>>)
+        .where(and(eq(columns.id, id), eq(columns.version as SQLiteColumn, current.version ?? 1)))
+        .run().changes > 0;
+    },
+    hardDelete: (id) => {
+      const current = db.select({ version: columns.version as SQLiteColumn }).from(table).where(eq(columns.id, id)).get() as { version?: number } | undefined;
+      return current !== undefined && db.delete(table).where(and(eq(columns.id, id), eq(columns.version as SQLiteColumn, current.version ?? 1))).run().changes > 0;
+    },
   };
 }
 
@@ -230,6 +235,7 @@ export function createSqliteRepositories(client: Database.Database): RepositoryS
                   amount: value.amount,
                   note: value.note,
                   updatedAt: value.updatedAt,
+                  version: sql`${propertyCostComponents.version} + 1`,
                 },
               })
               .run();
@@ -262,11 +268,12 @@ export function createSqliteRepositories(client: Database.Database): RepositoryS
               notedTotalBeforeCash: value.notedTotalBeforeCash,
               notedFinalCost: value.notedFinalCost,
               updatedAt: value.updatedAt,
+              version: sql`${propertyDetails.version} + 1`,
             },
           }).run();
         },
       },
     },
-    transaction: (work) => client.transaction(work)(),
+    transaction: (work) => client.transaction(work).immediate(),
   };
 }

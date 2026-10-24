@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { openSqliteDatabase, type SqliteConnection } from "./connection.js";
 import { createSqliteRepositories } from "./repositories.js";
+import { acquireDatabaseLock } from "./paths.js";
+import { readFileSync, writeFileSync } from "node:fs";
 
 describe("SQLite persistence", () => {
   let directory: string;
@@ -11,7 +13,27 @@ describe("SQLite persistence", () => {
 
   afterEach(() => {
     connection?.close();
-    rmSync(directory, { recursive: true, force: true });
+    if (directory) rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("applies the required durability pragmas on every connection", () => {
+    directory = mkdtempSync(join(tmpdir(), "loan-dashboard-pragmas-"));
+    connection = openSqliteDatabase(join(directory, "loans.db"));
+    expect(connection.client.pragma("journal_mode", { simple: true })).toBe("wal");
+    expect(connection.client.pragma("synchronous", { simple: true })).toBe(2);
+    expect(connection.client.pragma("foreign_keys", { simple: true })).toBe(1);
+    expect(connection.client.pragma("busy_timeout", { simple: true })).toBe(5000);
+  });
+
+  it("refuses a live database lock and clears a stale PID lock", () => {
+    directory = mkdtempSync(join(tmpdir(), "loan-dashboard-lock-"));
+    const release = acquireDatabaseLock(directory);
+    expect(() => acquireDatabaseLock(directory)).toThrow(/owns the database lock/);
+    release();
+    writeFileSync(join(directory, ".lock"), "999999999\n");
+    const releaseRecovered = acquireDatabaseLock(directory);
+    expect(Number(readFileSync(join(directory, ".lock"), "utf8").trim())).toBe(process.pid);
+    releaseRecovered();
   });
 
   it("keeps loan records after closing and reopening the database file", () => {

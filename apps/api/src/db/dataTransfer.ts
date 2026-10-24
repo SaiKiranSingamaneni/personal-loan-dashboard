@@ -18,6 +18,7 @@ import {
 export const importRequestSchema = z.object({
   mode: z.enum(["preview", "overwrite"]),
   data: exportDataSchema,
+  confirmation: z.literal("REPLACE ALL DATA").optional(),
 }).strict();
 
 function validateRelations(data: ExportData): void {

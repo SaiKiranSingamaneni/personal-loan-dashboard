@@ -117,6 +117,7 @@ Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 - [x] H-T0 Audit current database paths, durability, backups, migrations, browser storage, IDs and cloud-sync location; document in `docs/DB_AUDIT.md` before code changes.
 - [x] H-T1 Resolve one fixed-root database location from `DB_DIR`; add relocation command, repository-local `db/` layout and Settings path/warnings.
 - [x] H-T1b Pre-migration verified snapshots, startup snapshot deduplication, reject `DATABASE_PATH`, confirm backup directory resolution, and record live SQLite integrity/foreign-key results.
+- [x] H-T1c Add scratch-only development/seed flows, seed safety, production start, and confirmations plus pre-snapshots for destructive operations.
 - [x] H-T2 Enforce SQLite durability pragmas, single-instance lock, graceful shutdown, immediate write transactions, disk checks and optimistic concurrency.
 - [ ] H-T3 Add startup/daily integrity checks, degraded read-only mode and health/restore workflow.
 - [ ] H-T4 Implement SQLite-API snapshots, verification, manifest, triggers, retention and protected snapshots.
@@ -144,6 +145,7 @@ Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 - [ ] Do not begin V-T1 until H-T9 and the `db-hardening-complete` tag are complete.
 
 ## Session log
+- 2026-10-24 - H-T1c - Added portable scratch dev and seed commands, refused seeding non-demo databases, added single-port production start, typed confirmation and verified pre-snapshots for import overwrite/permanent delete, guarded relocation with `--confirm`, and prevented same-minute backups from replacing prior snapshots; `npm run verify` passes (129 tests) and `npm run build` succeeds - H-T3 is next.
 - 2026-10-24 - H-T1 - Added the fixed-root `db/` directory tree, `DB_DIR` resolution, safe legacy relocation via SQLite backup API with row-count and integrity checks, Settings database path/copy and sync-location warnings, and updated run documentation; `npm run verify` passes (118 tests) - H-T2 is next.
 - 2026-10-24 - H-T2 - Applied WAL/FULL/foreign-key/busy-timeout pragmas, immediate migrations/import/repository transactions, PID lock recovery, graceful checkpoint and final snapshot, disk-space warnings, version columns and `If-Match` stale-write checks; `npm run verify` passes (121 tests) - H-T3 is next. Confirmed `v1.0.0`, `rewrite-complete`, and `property-rework-complete` tags already existed; no tag repair was needed.
 - 2026-10-24 - H-T1b - Added verified SQLite backup API snapshots before migrations, aborted on snapshot failure, ran foreign-key checks after migrations 0005/0008, protected pre-migration snapshots from pruning, deduplicated unchanged startup snapshots for ten minutes, rejected `DATABASE_PATH`, and verified backups resolve under `DB_DIR`; live integrity check is `ok` and foreign-key check returned no rows. `npm run verify` passes - H-T3 is next.

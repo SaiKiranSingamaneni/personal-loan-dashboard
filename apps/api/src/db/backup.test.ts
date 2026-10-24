@@ -77,4 +77,22 @@ describe("SQLite backup service", () => {
       connection.close();
     }
   });
+
+  it("does not replace an existing snapshot when another backup is created in the same minute", async () => {
+    directory = mkdtempSync(join(tmpdir(), "loan-dashboard-backup-collision-"));
+    const databasePath = join(directory, "loans.db");
+    const connection = await openSqliteDatabase(databasePath);
+    try {
+      const backupDirectory = join(directory, "backups");
+      const service = new BackupService(connection.client, databasePath, backupDirectory);
+      const at = new Date("2036-08-09T10:11:12.000Z");
+      const first = await service.create(at);
+      connection.client.prepare("INSERT INTO loans (id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent, rate_type, tenure_months, start_date, emi_due_day) VALUES ('later', 'Later', 'Bank', 'home', 10000, 8, 'fixed', 12, '2036-01-01', 5)").run();
+      const second = await service.create(at);
+      expect(second).not.toBe(first);
+      expect(readdirSync(backupDirectory).filter((name) => name.startsWith("loans-") && name.endsWith(".db"))).toHaveLength(2);
+    } finally {
+      connection.close();
+    }
+  });
 });

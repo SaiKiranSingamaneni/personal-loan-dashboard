@@ -5,6 +5,7 @@ import { exportAllData, importAllData, importRequestSchema } from "../db/dataTra
 import type { RepositorySet } from "../db/repositories.js";
 import { HttpError } from "../http/errors.js";
 import { parseInput, validateBody } from "../http/validation.js";
+import { BackupService } from "../db/backup.js";
 
 const trashTypeSchema = z.enum([
   "loan",
@@ -71,13 +72,26 @@ function hardDelete(repositories: RepositorySet, type: z.infer<typeof trashTypeS
 export function createDataSafetyRouter(
   database: Database.Database,
   repositories: RepositorySet,
+  backups?: BackupService,
 ): Router {
   const router = Router();
+  const takePreMutationSnapshot = async (reason: string): Promise<void> => {
+    if (database.name === ":memory:") return;
+    try {
+      await (backups ?? new BackupService(database, database.name)).create();
+    } catch {
+      throw new HttpError(503, "SNAPSHOT_FAILED", `Could not create a verified snapshot before ${reason}; no changes were made.`);
+    }
+  };
   router.get("/export", (_request, response) => {
     response.json(exportAllData(database));
   });
-  router.post("/import", validateBody(importRequestSchema), (request, response) => {
+  router.post("/import", validateBody(importRequestSchema), async (request, response) => {
     const input = parseInput(importRequestSchema, request.body);
+    if (input.mode === "overwrite" && input.confirmation !== "REPLACE ALL DATA") {
+      throw new HttpError(400, "CONFIRMATION_REQUIRED", "Type REPLACE ALL DATA to confirm replacing the database.");
+    }
+    if (input.mode === "overwrite") await takePreMutationSnapshot("import");
     try {
       response.json(importAllData(database, input.data, input.mode));
     } catch (error) {
@@ -118,13 +132,14 @@ export function createDataSafetyRouter(
   router.delete(
     "/trash/:type/:id",
     validateBody(permanentDeleteSchema),
-    (request, response) => {
+    async (request, response) => {
       parseInput(permanentDeleteSchema, request.body);
       const type = trashTypeSchema.parse(routeParam(request, "type"));
       const id = routeParam(request, "id");
       if (!isDeleted(repositories, type, id)) {
         throw new HttpError(404, "TRASH_ENTRY_NOT_FOUND", "Deleted entry was not found.");
       }
+      await takePreMutationSnapshot("permanent deletion");
       hardDelete(repositories, type, id);
       response.status(204).end();
     },

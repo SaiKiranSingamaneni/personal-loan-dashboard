@@ -23,7 +23,7 @@ describe("Trash page", () => {
       { id: "payment-1", entityType: "payment", loanId: "loan-1", date: "2026-10-02", type: "emi", amount: 10000, deletedAt: "2026-10-03T00:00:00.000Z" },
     ];
     const requests: { path: string; method: string; body?: Record<string, unknown> }[] = [];
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal("prompt", vi.fn(() => "DELETE"));
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), window.location.origin).pathname;
       const method = init?.method ?? "GET";
@@ -53,6 +53,6 @@ describe("Trash page", () => {
     await waitFor(() => expect(requests.some((request) => request.path === "/api/trash/payment/payment-1" && request.method === "DELETE")).toBe(true));
     expect(requests.find((request) => request.method === "DELETE")?.body).toEqual({ confirmation: "DELETE" });
     expect(await screen.findByText("Trash is empty")).toBeTruthy();
-    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(window.prompt).toHaveBeenCalledTimes(1);
   });
 });

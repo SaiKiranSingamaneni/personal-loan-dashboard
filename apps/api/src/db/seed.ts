@@ -1,12 +1,27 @@
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import Database from "better-sqlite3";
 import { openSqliteDatabase } from "./connection.js";
+import { findRepositoryRoot } from "./paths.js";
+
+const demoLoanIds = new Set(["demo-home-loan", "demo-plot-loan"]);
+
+export function configureScratchSeedDirectory(): string {
+  const scratchDirectory = join(findRepositoryRoot(), "db-scratch");
+  process.env.DB_DIR = scratchDirectory;
+  return scratchDirectory;
+}
 
 export function seedDemoData(db: Database.Database): boolean {
   const existing = db.prepare("SELECT COUNT(*) AS count FROM loans").get() as {
     count: number;
   };
   if (existing.count > 0) {
+    const loanRows = db.prepare("SELECT id FROM loans").all() as { id: string }[];
+    const nonDemoLoan = loanRows.find(({ id }) => !demoLoanIds.has(id));
+    if (nonDemoLoan !== undefined) {
+      throw new Error(`Refusing to seed: database contains non-demo loan '${nonDemoLoan.id}'.`);
+    }
     return false;
   }
 
@@ -103,6 +118,8 @@ export function seedDemoData(db: Database.Database): boolean {
 }
 
 async function runSeedScript(): Promise<void> {
+  const scratchDirectory = configureScratchSeedDirectory();
+  process.stdout.write(`Seeding scratch database at ${scratchDirectory}\n`);
   const connection = await openSqliteDatabase();
   try {
     const inserted = seedDemoData(connection.client);

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import request from "supertest";
@@ -62,9 +62,15 @@ describe("data safety endpoints", () => {
     expect(preview.body.counts.loans).toBe(1);
     expect((await request(app).get("/api/loans")).body).toHaveLength(2);
 
-    const overwritten = await request(app)
+    const unconfirmedOverwrite = await request(app)
       .post("/api/import")
       .send({ mode: "overwrite", data: exported.body });
+    expect(unconfirmedOverwrite.status).toBe(400);
+    expect((await request(app).get("/api/loans")).body).toHaveLength(2);
+
+    const overwritten = await request(app)
+      .post("/api/import")
+      .send({ mode: "overwrite", confirmation: "REPLACE ALL DATA", data: exported.body });
     expect(overwritten.status).toBe(200);
     expect((await request(app).get("/api/loans")).body).toHaveLength(1);
     const roundTrip = await request(app).get("/api/export");
@@ -79,13 +85,13 @@ describe("data safety endpoints", () => {
     };
     const invalidRelationship = await request(app)
       .post("/api/import")
-      .send({ mode: "overwrite", data: brokenRelationship });
+      .send({ mode: "overwrite", confirmation: "REPLACE ALL DATA", data: brokenRelationship });
     expect(invalidRelationship.status).toBe(400);
     expect((await request(app).get("/api/loans")).body).toHaveLength(1);
 
     const invalid = await request(app)
       .post("/api/import")
-      .send({ mode: "overwrite", data: { ...exported.body, formatVersion: 99 } });
+      .send({ mode: "overwrite", confirmation: "REPLACE ALL DATA", data: { ...exported.body, formatVersion: 99 } });
     expect(invalid.status).toBe(400);
     expect((await request(app).get(`/api/loans/${extra.body.id}`)).status).toBe(404);
     expect(tempDirectory.length).toBeGreaterThan(0);
@@ -143,6 +149,35 @@ describe("data safety endpoints", () => {
       .send({ confirmation: "DELETE" });
     expect(deleted.status).toBe(204);
     expect((await request(app).get("/api/trash")).body).toHaveLength(0);
+  });
+
+  it("takes a verified snapshot before a file-backed permanent delete", async () => {
+    tempDirectory = mkdtempSync(join(tmpdir(), "loan-dashboard-pre-delete-"));
+    connection = await openSqliteDatabase(join(tempDirectory, "loans.db"));
+    const backups = new BackupService(connection.client, connection.databasePath, join(tempDirectory, "backups"));
+    app = createApp(createSqliteRepositories(connection.client), backups, connection.client);
+    const loan = await request(app).post("/api/loans").send({
+      name: "Recoverable loan", lender: "Example Bank", loanType: "personal",
+      sanctionedAmount: 100_000, annualRatePercent: 10, rateType: "fixed",
+      tenureMonths: 12, startDate: "2026-01-01", emiDueDay: 5,
+    });
+    await request(app).delete(`/api/loans/${loan.body.id as string}`);
+    const deleted = await request(app).delete(`/api/trash/loan/${loan.body.id as string}`).send({ confirmation: "DELETE" });
+    expect(deleted.status).toBe(204);
+    expect(readdirSync(join(tempDirectory, "backups")).some((name) => name.endsWith(".db"))).toBe(true);
+  });
+
+  it("takes a verified snapshot before file-backed import overwrite", async () => {
+    tempDirectory = mkdtempSync(join(tmpdir(), "loan-dashboard-pre-import-"));
+    connection = await openSqliteDatabase(join(tempDirectory, "loans.db"));
+    const backups = new BackupService(connection.client, connection.databasePath, join(tempDirectory, "backups"));
+    app = createApp(createSqliteRepositories(connection.client), backups, connection.client);
+    const exported = await request(app).get("/api/export");
+    const imported = await request(app).post("/api/import").send({
+      mode: "overwrite", confirmation: "REPLACE ALL DATA", data: exported.body,
+    });
+    expect(imported.status).toBe(200);
+    expect(readdirSync(join(tempDirectory, "backups")).some((name) => name.endsWith(".db"))).toBe(true);
   });
 
   it("runs the what-if endpoint and creates a manual backup", async () => {

@@ -28,7 +28,7 @@ describe("data management page", () => {
   it("previews a validated export and only overwrites after explicit confirmation", async () => {
     const user = userEvent.setup();
     const requests: { mode?: string; path: string }[] = [];
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.stubGlobal("prompt", vi.fn(() => "REPLACE ALL DATA"));
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), window.location.origin).pathname;
       const body = init?.body === undefined ? undefined : JSON.parse(String(init.body)) as { mode?: string };
@@ -51,6 +51,6 @@ describe("data management page", () => {
     await user.click(screen.getByRole("button", { name: "Replace current data" }));
     await waitFor(() => expect(requests.some((request) => request.mode === "overwrite")).toBe(true));
     expect(await screen.findByText(/Imported 1 loans and 0 payments/)).toBeTruthy();
-    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(window.prompt).toHaveBeenCalledTimes(1);
   });
 });

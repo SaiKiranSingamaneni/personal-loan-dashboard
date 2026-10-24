@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { runMigrations } from "./connection.js";
-import { seedDemoData } from "./seed.js";
+import { configureScratchSeedDirectory, seedDemoData } from "./seed.js";
 
 describe("initial SQLite schema and demo seed", () => {
   let db: Database.Database | undefined;
@@ -44,6 +44,31 @@ describe("initial SQLite schema and demo seed", () => {
       "rate_changes",
       "schema_migrations",
     ]);
+  });
+
+  it("refuses to seed a database that contains a non-demo loan", async () => {
+    db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    await runMigrations(db);
+    db.prepare(`INSERT INTO loans (
+      id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
+      rate_type, tenure_months, start_date, emi_due_day
+    ) VALUES ('real-loan', 'Personal loan', 'Bank', 'personal', 100000, 10,
+      'fixed', 12, '2026-01-01', 5)`).run();
+    expect(() => seedDemoData(db!)).toThrow(/Refusing to seed.*non-demo loan/);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM loans").get()).toEqual({ count: 1 });
+  });
+
+  it("forces the seed command to use the repository scratch directory", () => {
+    const prior = process.env.DB_DIR;
+    try {
+      process.env.DB_DIR = "./db";
+      expect(configureScratchSeedDirectory()).toMatch(/[\\/]db-scratch$/);
+      expect(process.env.DB_DIR).toBe(configureScratchSeedDirectory());
+    } finally {
+      if (prior === undefined) delete process.env.DB_DIR;
+      else process.env.DB_DIR = prior;
+    }
   });
 
   it("migrates existing financial records into activity without changing their values", async () => {

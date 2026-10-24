@@ -80,6 +80,7 @@ export async function startServer(): Promise<void> {
   };
   process.once("SIGINT", close);
   process.once("SIGTERM", close);
+  if (process.platform !== "win32") process.once("SIGHUP", close);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

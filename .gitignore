@@ -6,6 +6,7 @@ coverage/
 .env.*
 !.env.example
 data/
+db-scratch/
 !db/
 !db/data/
 db/data/*

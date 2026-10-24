@@ -1,10 +1,10 @@
-import { mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { assertDiskSpace } from "./connection.js";
 import { dirname, join, resolve } from "node:path";
 import type Database from "better-sqlite3";
 import { prepareSnapshotFile, snapshotIsRecentAndCurrent, tableCounts, verifySnapshot } from "./snapshotVerification.js";
 
-const backupPattern = /^loans-\d{8}-\d{4}\.db$/;
+const backupPattern = /^loans-\d{8}-\d{4}(?:-\d+)?\.db$/;
 
 export class BackupService {
   readonly databasePath: string;
@@ -32,7 +32,13 @@ export class BackupService {
     const day = now.getUTCDate().toString().padStart(2, "0");
     const hour = now.getUTCHours().toString().padStart(2, "0");
     const minute = now.getUTCMinutes().toString().padStart(2, "0");
-    const filename = `loans-${year}${month}${day}-${hour}${minute}.db`;
+    const prefix = `loans-${year}${month}${day}-${hour}${minute}`;
+    let filename = `${prefix}.db`;
+    let suffix = 1;
+    while (existsSync(join(this.backupDirectory, filename))) {
+      filename = `${prefix}-${suffix}.db`;
+      suffix += 1;
+    }
     const target = join(this.backupDirectory, filename);
     const temporary = `${target}.${process.pid}.tmp`;
     const countsAtSnapshotStart = tableCounts(this.database);

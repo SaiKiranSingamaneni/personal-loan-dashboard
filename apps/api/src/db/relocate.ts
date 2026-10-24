@@ -85,6 +85,9 @@ export async function relocateDatabase(
 }
 
 async function main(): Promise<void> {
+  if (!process.argv.includes("--confirm")) {
+    throw new Error("Relocation can replace the database destination. Re-run with --confirm after reviewing the source and destination.");
+  }
   await relocateDatabase();
 }
 

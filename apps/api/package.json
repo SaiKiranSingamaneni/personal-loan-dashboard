@@ -18,6 +18,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "build": "tsc --build",
     "seed": "tsx src/db/seed.ts",
     "db:relocate": "tsx src/db/relocate.ts"

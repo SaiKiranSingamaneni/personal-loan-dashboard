@@ -15,6 +15,10 @@ npm ci
 npm run dev
 ```
 
+Use `npm run dev:scratch` when you want an isolated development database under the ignored `db-scratch/` directory. The seed command always targets that scratch database and refuses to seed if it finds a non-demo loan. For a built single-port production run, use `npm start`; it builds the web app and serves it from the API without file watching.
+
+The relocation command requires an explicit confirmation flag: `npm run db:relocate -- --confirm`.
+
 Open the Vite address printed in the terminal (normally `http://127.0.0.1:5173`). The API listens on `127.0.0.1:3001`; Vite proxies `/api` requests to it. The database always resolves to `db/data/loans.db` under the repository, independent of the shell working directory. The API prints the absolute path at startup; **Settings > Data** shows the same path.
 
 The default database directory is `<repository root>/db`. Set `DB_DIR` to an absolute path to store it elsewhere. A relative `DB_DIR` is resolved against the repository root, not the current working directory. The root is located from the API source using `.loan-dashboard-root` and the workspace `package.json`.

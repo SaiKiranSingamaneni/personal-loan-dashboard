@@ -9,6 +9,8 @@ import type Database from "better-sqlite3";
 import { createDataSafetyRouter } from "./routes/dataSafety.js";
 import { createActivityRouter } from "./routes/activity.js";
 import { databasePathWarnings } from "./db/paths.js";
+import { join } from "node:path";
+import { resolveDatabasePaths } from "./db/paths.js";
 
 export function createApp(
   repositories?: RepositorySet,
@@ -41,7 +43,7 @@ export function createApp(
   }
   if (repositories !== undefined) {
     if (database !== undefined) {
-      app.use("/api", createDataSafetyRouter(database, repositories));
+      app.use("/api", createDataSafetyRouter(database, repositories, backupService));
     }
     const entries = createLoanEntryRouters(repositories, (id) => {
       if (repositories.loans.getById(id) === undefined) {
@@ -56,6 +58,15 @@ export function createApp(
     app.use("/api/contributions", entries.contributions);
     app.use("/api/rate-changes", entries.rateChanges);
     app.use("/api/notes", entries.notes);
+  }
+  if (process.env.NODE_ENV === "production") {
+    const webBuild = join(resolveDatabasePaths().repositoryRoot, "apps", "web", "dist");
+    app.use(express.static(webBuild));
+    app.get(/^(?!\/api\/).*/, (_request, response, next) => {
+      response.sendFile(join(webBuild, "index.html"), (error) => {
+        if (error) next(error);
+      });
+    });
   }
   app.use((_request, _response, next) => {
     next(new HttpError(404, "NOT_FOUND", "The requested endpoint does not exist."));

@@ -61,7 +61,7 @@ export function DataManagementPage() {
   const overwriteMutation = useMutation({
     mutationFn: () => apiRequest<ImportResult>("/api/import", {
       method: "POST",
-      body: JSON.stringify({ mode: "overwrite", data: importData }),
+      body: JSON.stringify({ mode: "overwrite", confirmation: "REPLACE ALL DATA", data: importData }),
     }),
     onSuccess: async (result) => {
       setPreview(null);
@@ -107,7 +107,7 @@ export function DataManagementPage() {
 
   function confirmOverwrite() {
     if (importData === null || preview === null) return;
-    if (!window.confirm("Replace all current loan data with the validated import? This cannot be undone except from a backup.")) return;
+    if (window.prompt("This replaces all current loan data. Type REPLACE ALL DATA to continue.") !== "REPLACE ALL DATA") return;
     setError(null);
     setMessage(null);
     overwriteMutation.mutate();

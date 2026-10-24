@@ -54,11 +54,18 @@ describe("Activity and property APIs", () => {
         { name: "Base price", group: "AGREEMENT", kind: "BASE_PRICE", amount: 1_000_000 },
         { name: "Interiors", group: "OUTSIDE_AGREEMENT", kind: "INTERIORS", amount: 100_000 },
       ],
+      details: {
+        unitLabel: "Flat 1402", superBuiltUpSft: 1450, carpetSft: 1100,
+        ratePerSft: 500_000, parkingSlots: 2, parkingCharges: 100_000,
+        notedGrandTotal: 900_000, notedTotalBeforeCash: null, notedFinalCost: null,
+      },
       invoiceGrandTotal: 900_000,
     }).expect(200);
     expect(property.body.components).toHaveLength(2);
     expect(property.body.invoiceGrandTotal).toBe(900_000);
     expect(property.body.invoiceMismatch).toBe(100_000);
+    expect(property.body.details).toMatchObject({ unitLabel: "Flat 1402", superBuiltUpSft: 1450, ratePerSft: 500_000 });
+    expect((await request(app).get(`/api/loans/${loanId}/property`)).body.details.notedGrandTotal).toBe(900_000);
 
     await request(app).post(`/api/loans/${loanId}/activity`).send({
       type: "LOAN_DISBURSEMENT", date: "2025-01-03", title: "First draw", amount: 250_000,
@@ -67,6 +74,10 @@ describe("Activity and property APIs", () => {
     expect(dashboard.body.summary).toMatchObject({
       sanctioned: 9_000_000, disbursed: 250_000, undisbursed: 8_750_000,
       agreementValue: 1_000_000, extraCosts: 100_000, totalOutlay: 1_100_000,
+    });
+    expect(dashboard.body.propertyBreakdown).toMatchObject({
+      totals: { grandTotal: 1_000_000, finalCost: 1_100_000 },
+      fundingSplit: { loan: 9_000_000, selfPaidBank: 0, cash: 0, finalCost: 1_100_000 },
     });
     const exported = await request(app).get("/api/export").expect(200);
     expect(exported.body.activityEntries.length).toBeGreaterThan(0);

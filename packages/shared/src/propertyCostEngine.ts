@@ -11,7 +11,9 @@ export interface PropertyCostComponent {
   note?: string | null;
 }
 export interface PropertyCostDetails {
+  unitLabel?: string | null;
   superBuiltUpSft: number;
+  carpetSft?: number | null;
   ratePerSft: Paise;
   parkingSlots: number;
   parkingCharges?: Paise | null;

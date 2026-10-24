@@ -225,7 +225,8 @@ export function createActivityRouter(repositories: RepositorySet): Router {
   router.get("/loans/:loanId/property", (request, response) => {
     const loanId = param(request, "loanId");
     const loan = requireLoan(repositories, loanId);
-    response.json({ components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
+    const details = repositories.children.propertyDetails.getByLoan(loanId);
+    response.json({ details: details ?? null, components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
       ...item,
       group: item.group === "ADDITIONAL" || item.group === "CASH" ? "OUTSIDE_AGREEMENT" : item.group,
       kind: item.kind === "OTHER_ADDITIONAL" || item.kind === "OTHER_AGREEMENT" ? "OTHER" : item.kind,
@@ -257,12 +258,30 @@ export function createActivityRouter(repositories: RepositorySet): Router {
         }
       }
       repositories.children.propertyCosts.upsertMany(components);
+      if (input.details !== undefined) {
+        const old = repositories.children.propertyDetails.getByLoan(loanId);
+        repositories.children.propertyDetails.upsert({
+          loanId,
+          unitLabel: input.details.unitLabel ?? null,
+          superBuiltUpSft: input.details.superBuiltUpSft,
+          carpetSft: input.details.carpetSft ?? null,
+          ratePerSft: input.details.ratePerSft,
+          parkingSlots: input.details.parkingSlots,
+          parkingCharges: input.details.parkingCharges ?? null,
+          notedGrandTotal: input.details.notedGrandTotal ?? null,
+          notedTotalBeforeCash: input.details.notedTotalBeforeCash ?? null,
+          notedFinalCost: input.details.notedFinalCost ?? null,
+          createdAt: old?.createdAt ?? now,
+          updatedAt: now,
+        });
+      }
       repositories.loans.update(loanId, {
         invoiceGrandTotal: input.invoiceGrandTotal ?? null,
         updatedAt: now,
       });
     });
     response.json({
+      details: repositories.children.propertyDetails.getByLoan(loanId) ?? null,
       components: repositories.children.propertyCosts.listByLoan(loanId),
       invoiceGrandTotal: input.invoiceGrandTotal ?? null,
       invoiceMismatch: input.invoiceGrandTotal == null || input.invoiceGrandTotal === components
@@ -281,6 +300,18 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       summary: dashboard.summary,
       invoiceMismatch: dashboard.invoiceMismatch,
       components: repositories.children.propertyCosts.listByLoan(loanId),
+      propertyBreakdown: {
+        details: repositories.children.propertyDetails.getByLoan(loanId) ?? null,
+        components: repositories.children.propertyCosts.listByLoan(loanId),
+        totals: dashboard.summary.propertyCost,
+        fundingSplit: {
+          loan: dashboard.summary.propertyCost.loanShare,
+          selfPaidBank: dashboard.summary.propertyCost.selfPaidBank,
+          cash: dashboard.summary.propertyCost.cashTotal,
+          finalCost: dashboard.summary.propertyCost.finalCost,
+        },
+        checks: dashboard.summary.propertyCost.checks,
+      },
       recentActivity: dashboard.entries.filter((item) => item.deletedAt == null)
         .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
     });

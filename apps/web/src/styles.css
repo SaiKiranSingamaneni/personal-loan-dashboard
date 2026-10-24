@@ -76,6 +76,7 @@ a { color: inherit; text-decoration: none; }
 .calculator-link { margin: 0 4px; padding: 9px 10px; border-radius: 9px; color: var(--muted); font-size: 11px; font-weight: 600; }
 .calculator-link:hover, .calculator-link.is-active { background: var(--surface-soft); color: var(--accent); }
 .data-management-page { display: grid; gap: 14px; }
+.readonly-db-path { width: min(650px, 100%); min-height: 34px; padding: 0 9px; margin-top: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--muted); font: 500 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .data-action-card { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; }
 .data-action-card h2 { margin: 0 0 5px; color: var(--text); font-size: 14px; }
 .data-action-card p { max-width: 600px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }

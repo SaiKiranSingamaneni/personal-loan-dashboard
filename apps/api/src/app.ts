@@ -8,6 +8,7 @@ import { BackupService } from "./db/backup.js";
 import type Database from "better-sqlite3";
 import { createDataSafetyRouter } from "./routes/dataSafety.js";
 import { createActivityRouter } from "./routes/activity.js";
+import { databasePathWarnings } from "./db/paths.js";
 
 export function createApp(
   repositories?: RepositorySet,
@@ -21,6 +22,12 @@ export function createApp(
   app.get("/api/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
   });
+  if (database !== undefined) {
+    app.get("/api/system/config", (_request, response) => {
+      const dbPath = database.name;
+      response.json({ dbPath, warnings: databasePathWarnings(dbPath) });
+    });
+  }
   app.use("/api/simulate", createSimulationRouter());
   if (backupService !== undefined) {
     app.post("/api/backup", async (_request, response, next) => {

@@ -4,6 +4,7 @@ import { createSqliteRepositories } from "./db/repositories.js";
 import { BackupService } from "./db/backup.js";
 import { fileURLToPath } from "node:url";
 import { reconcileAllLoanAutoEmis } from "./services/autoEmis.js";
+import { resolveDatabasePaths } from "./db/paths.js";
 
 export interface ApiRuntime {
   app: ReturnType<typeof createApp>;
@@ -13,11 +14,14 @@ export interface ApiRuntime {
 }
 
 export async function initializeApi(
-  databasePath = process.env.DATABASE_PATH ?? "./data/loans.db",
+  databasePath?: string,
   backupDirectory?: string,
 ): Promise<ApiRuntime> {
   const connection = openSqliteDatabase(databasePath);
-  const backups = new BackupService(connection.client, connection.databasePath, backupDirectory);
+  const resolvedBackupDirectory = backupDirectory ?? (databasePath === undefined
+    ? resolveDatabasePaths().backupsDirectory
+    : undefined);
+  const backups = new BackupService(connection.client, connection.databasePath, resolvedBackupDirectory);
   try {
     await backups.create();
     const repositories = createSqliteRepositories(connection.client);
@@ -36,6 +40,7 @@ export async function initializeApi(
 
 export async function startServer(): Promise<void> {
   const runtime = await initializeApi();
+  process.stdout.write(`Database path: ${runtime.connection.databasePath}\n`);
   const port = Number(process.env.PORT ?? 3001);
   const dailyBackup = setInterval(() => {
     void runtime.backups.create().catch((error: unknown) => {

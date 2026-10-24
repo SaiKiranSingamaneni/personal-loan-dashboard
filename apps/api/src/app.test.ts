@@ -6,6 +6,10 @@ import { parseInput } from "./http/validation.js";
 import { validateBody } from "./http/validation.js";
 import { errorHandler } from "./http/errors.js";
 import { loanCreateSchema } from "@loan-dashboard/shared";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { openSqliteDatabase } from "./db/connection.js";
 
 const app = createApp();
 
@@ -14,6 +18,19 @@ describe("Express API skeleton", () => {
     const response = await request(app).get("/api/health");
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: "ok" });
+  });
+
+  it("reports the absolute database location and path warnings", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "loan-dashboard-system-config-"));
+    const connection = openSqliteDatabase(join(directory, "loans.db"));
+    try {
+      const response = await request(createApp(undefined, undefined, connection.client)).get("/api/system/config");
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ dbPath: connection.databasePath, warnings: [] });
+    } finally {
+      connection.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it("returns the common error envelope for missing routes and malformed JSON", async () => {

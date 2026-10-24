@@ -32,12 +32,17 @@ describe("data management page", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), window.location.origin).pathname;
       const body = init?.body === undefined ? undefined : JSON.parse(String(init.body)) as { mode?: string };
+      if (path === "/api/system/config") return new Response(JSON.stringify({ dbPath: "/workspace/db/data/loans.db", warnings: ["Database path warning"] }), { status: 200 });
       requests.push({ path, mode: body?.mode });
       if (path === "/api/import" && body?.mode === "preview") return new Response(JSON.stringify({ preview: true, counts: { loans: 1, payments: 0, notes: 0 } }), { status: 200 });
       if (path === "/api/import" && body?.mode === "overwrite") return new Response(JSON.stringify({ preview: false, counts: { loans: 1, payments: 0, notes: 0 } }), { status: 200 });
       return new Response(JSON.stringify({ error: { message: "Unexpected request" } }), { status: 404 });
     }));
     render(<MemoryRouter><QueryClientProvider client={new QueryClient()}><DataManagementPage /></QueryClientProvider></MemoryRouter>);
+
+    expect(await screen.findByLabelText("Database path")).toHaveProperty("value", "/workspace/db/data/loans.db");
+    expect(screen.getByRole("button", { name: "Copy path" })).toBeTruthy();
+    expect(screen.getByText("Database path warning")).toBeTruthy();
 
     const file = new File([JSON.stringify(validExport)], "my-loans.json", { type: "application/json" });
     await user.upload(screen.getByLabelText("Import JSON file"), file);

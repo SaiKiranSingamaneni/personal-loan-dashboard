@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { exportDataSchema, type ExportData } from "@loan-dashboard/shared";
 import { apiRequest } from "./api.js";
@@ -14,6 +14,10 @@ interface ImportResult {
 }
 interface BackupResult {
   path: string;
+}
+interface SystemConfig {
+  dbPath: string;
+  warnings: string[];
 }
 
 function downloadFile(contents: string, filename: string, type: string) {
@@ -38,6 +42,12 @@ export function DataManagementPage() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pathCopied, setPathCopied] = useState(false);
+  const systemConfigQuery = useQuery({
+    queryKey: ["system", "config"],
+    queryFn: () => apiRequest<SystemConfig>("/api/system/config"),
+    retry: false,
+  });
   const exportMutation = useMutation({
     mutationFn: () => apiRequest<ExportData>("/api/export"),
     onSuccess: (data) => downloadFile(JSON.stringify(data, null, 2), `loans-export-${timestampName(new Date())}.json`, "application/json;charset=utf-8"),
@@ -108,6 +118,16 @@ export function DataManagementPage() {
       <div className="page-heading"><div><div className="eyebrow">LOCAL DATA</div><h1>Data and backups</h1><p>Export a portable copy, validate an import, or create a database backup.</p></div></div>
       {message && <p className="notice notice-success" role="status">{message}</p>}
       {error && <p className="notice notice-error" role="alert">{error}</p>}
+      {systemConfigQuery.data && <section className="chart-card data-action-card" aria-label="Database location">
+        <div><h2>Database location</h2><p>Application data is stored at this absolute path.</p><input className="readonly-db-path" aria-label="Database path" readOnly value={systemConfigQuery.data.dbPath} /></div>
+        <button className="button button-secondary" type="button" onClick={() => {
+          void navigator.clipboard?.writeText(systemConfigQuery.data!.dbPath).then(() => {
+            setPathCopied(true);
+            window.setTimeout(() => setPathCopied(false), 1500);
+          });
+        }}>{pathCopied ? "Copied" : "Copy path"}</button>
+        {systemConfigQuery.data.warnings.map((warning) => <p className="notice-warning" role="status" key={warning}>{warning}</p>)}
+      </section>}
       <section className="chart-card data-action-card">
         <div><h2>Export all data</h2><p>Download every loan and its entries as a versioned JSON file.</p></div>
         <button className="button button-primary" type="button" onClick={() => { setError(null); exportMutation.mutate(); }} disabled={exportMutation.isPending}>{exportMutation.isPending ? "Preparing export…" : "Export all data"}</button>

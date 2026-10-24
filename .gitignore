@@ -6,5 +6,15 @@ coverage/
 .env.*
 !.env.example
 data/
+!db/
+!db/data/
+db/data/*
+!db/data/.gitkeep
+db/backups/*
+!db/backups/.gitkeep
+db/exports/*
+!db/exports/.gitkeep
+db/quarantine/*
+!db/quarantine/.gitkeep
 
 .DS_Store

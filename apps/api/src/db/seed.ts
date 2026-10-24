@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { openSqliteDatabase } from "./connection.js";
@@ -104,8 +103,7 @@ export function seedDemoData(db: Database.Database): boolean {
 }
 
 function runSeedScript(): void {
-  const databasePath = resolve(process.env.DATABASE_PATH ?? "./data/loans.db");
-  const connection = openSqliteDatabase(databasePath);
+  const connection = openSqliteDatabase();
   try {
     const inserted = seedDemoData(connection.client);
     process.stdout.write(inserted ? "Seeded two demo loans.\n" : "Database already contains loans; no seed data added.\n");

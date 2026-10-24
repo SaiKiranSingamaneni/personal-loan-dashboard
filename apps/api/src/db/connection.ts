@@ -1,7 +1,8 @@
-import { mkdirSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
+import { ensureDatabaseDirectories, resolveDatabasePaths } from "./paths.js";
 
 const migrationsDirectory = fileURLToPath(new URL("./migrations/", import.meta.url));
 
@@ -42,17 +43,19 @@ export interface SqliteConnection {
 }
 
 export function openSqliteDatabase(
-  databasePath = process.env.DATABASE_PATH ?? "./data/loans.db",
+  databasePath?: string,
 ): SqliteConnection {
-  const resolvedPath = databasePath === ":memory:" ? databasePath : resolve(databasePath);
-  if (resolvedPath !== ":memory:") {
-    mkdirSync(dirname(resolvedPath), { recursive: true });
-  }
+  const resolvedPath = databasePath === ":memory:"
+    ? databasePath
+    : resolve(databasePath ?? resolveDatabasePaths().databasePath);
+  if (databasePath === undefined) ensureDatabaseDirectories(resolveDatabasePaths());
+  const isFirstDatabaseFile = resolvedPath !== ":memory:" && !existsSync(resolvedPath);
   const client = new Database(resolvedPath);
   try {
     client.pragma("foreign_keys = ON");
     client.pragma("journal_mode = WAL");
     runMigrations(client);
+    if (isFirstDatabaseFile) process.stdout.write(`Created database file ${resolvedPath}\n`);
   } catch (error) {
     client.close();
     throw error;

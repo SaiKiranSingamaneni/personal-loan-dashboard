@@ -15,7 +15,9 @@ npm ci
 npm run dev
 ```
 
-Open the Vite address printed in the terminal (normally `http://127.0.0.1:5173`). The API listens on `127.0.0.1:3001`; Vite proxies `/api` requests to it. The first run creates `data/loans.db` and a startup backup in `data/backups/`.
+Open the Vite address printed in the terminal (normally `http://127.0.0.1:5173`). The API listens on `127.0.0.1:3001`; Vite proxies `/api` requests to it. The database always resolves to `db/data/loans.db` under the repository, independent of the shell working directory. The API prints the absolute path at startup; **Settings > Data** shows the same path.
+
+The default database directory is `<repository root>/db`. Set `DB_DIR` to an absolute path to store it elsewhere. A relative `DB_DIR` is resolved against the repository root, not the current working directory. The root is located from the API source using `.loan-dashboard-root` and the workspace `package.json`.
 
 The database is empty on a fresh install. To add two example loans for local development, stop the app and run:
 
@@ -23,7 +25,9 @@ The database is empty on a fresh install. To add two example loans for local dev
 npm run seed --workspace @loan-dashboard/api
 ```
 
-The seed command uses the same `DATABASE_PATH` setting as the API and does not add rows when loans already exist.
+The seed command uses the same `DB_DIR` setting as the API and does not add rows when loans already exist.
+
+To move an existing database from the previous `data/loans.db` or `apps/api/data/loans.db` location, stop the API and run `npm run db:relocate`. The command refuses to overwrite an existing destination, uses SQLite's online backup API, verifies integrity and per-table row counts, and leaves the legacy database untouched.
 
 ## Scripts
 
@@ -36,14 +40,15 @@ The seed command uses the same `DATABASE_PATH` setting as the API and does not a
 | `npm run typecheck` | Run the TypeScript project build checks. |
 | `npm run verify` | Run typecheck, lint, and tests. |
 | `npm run seed --workspace @loan-dashboard/api` | Add the two demo loans if the selected database has no loans. |
+| `npm run db:relocate` | Safely copy a detected legacy database through SQLite's backup API; never overwrites or deletes the source. |
 
-The SQLite file defaults to `./data/loans.db`. Set `DATABASE_PATH` before starting the app to use another file. For example:
+The SQLite file defaults to `db/data/loans.db`. Set `DB_DIR` before starting the app to use another directory. For example:
 
 ```sh
-DATABASE_PATH="$PWD/local-data/loans.db" npm run dev
+DB_DIR="$PWD/local-loan-data" npm run dev
 ```
 
-The backup directory defaults to a `backups/` folder next to the configured database file. The application creates a backup before the API starts and every 24 hours while it runs. In the app, **Data and backups** also provides a manual backup, full JSON export/import, and a validation preview before replacing stored data.
+The database tree contains `data/`, `backups/`, `exports/`, and `quarantine/` beneath `DB_DIR`. In the app, **Settings > Data** provides the resolved database path, full JSON export/import, and a validation preview before replacing stored data. Database files must not be edited while the app runs.
 
 ## Project structure
 
@@ -56,7 +61,7 @@ packages/
 docs/
   SPEC.md        Product and implementation requirements
   BUILD_STATE.md Phase/task progress and session notes
-data/        Local SQLite database and automatic backups (ignored by Git)
+db/          Local database tree (`data/`, `backups/`, `exports/`, `quarantine/`)
 ```
 
 All money is stored as integer paise. Schedule interest is rounded to the nearest paisa per period; an exact half-paisa is rounded up. The last installment is adjusted so a fully repaid schedule closes at zero.
@@ -81,24 +86,16 @@ The SQLite migrations preserve the existing payment, funding, rate-change, and p
 
 ## Data, backups, and restore
 
-The default database is `data/loans.db`. SQLite uses WAL mode. Automatic backups are named `loans-YYYYMMDD-HHmm.db`, and the 30 newest backups are kept. Backups use SQLite's online backup API, so they include a consistent snapshot even when WAL is active.
+The live database is `db/data/loans.db` (or `DB_DIR/data/loans.db`). SQLite uses WAL mode. Snapshots are written beneath `DB_DIR/backups/`. The snapshot schedule, verification, retention, and mirror controls are being hardened in the current database-safety phase; do not treat a manually copied live database or WAL file as a backup.
 
 To restore a database backup:
 
-1. Stop the app with `Ctrl+C` so SQLite has no open connections.
-2. Keep a copy of the current database if you may need to undo the restore.
-3. Copy the selected backup over the configured database file. For the default path:
-
-   ```sh
-   cp ./data/backups/loans-YYYYMMDD-HHmm.db ./data/loans.db
-   ```
-
-   Replace the timestamp with the actual backup filename. If `DATABASE_PATH` is set, copy over that file instead.
-4. Start the app again with `npm run dev`.
+1. Use **Settings > Data → Import JSON** to restore a validated logical export while the database is running.
+2. Binary snapshot restore is being added in the database-safety phase. Do not replace the live `.db` file or its WAL/SHM files manually.
 
 You can also use **Data and backups → Export all data** to save a versioned JSON export. To restore from JSON, choose the file in **Import**, review the validation preview, then confirm overwrite. JSON import replaces current records; it does not merge them. Payment and amortization schedules can be exported separately as per-loan CSV files.
 
-The `data/` directory is ignored by Git. Keep a copy of important backups outside the computer that runs the app if you need protection from device loss.
+The live database and generated backup/export/quarantine contents under `db/` are ignored by Git. Keep verified backups outside the computer that runs the app if you need protection from device loss.
 
 ## Switching the repository to Postgres
 
@@ -112,4 +109,4 @@ When adding Postgres support:
 4. Extend the API integration suite to run against both adapters, then run `npm run verify` before switching a personal dataset.
 5. Move data using the versioned JSON export/import flow: export from SQLite, verify the import preview against Postgres, then import after confirming the destination. Compare all exported entities before retiring the SQLite copy.
 
-Postgres hosting and credentials are not part of the current offline/local runtime. Do not point this version at a remote database until the adapter, configuration, and deployment access controls have been implemented and tested.
+Postgres hosting and credentials are not part of the current offline/local runtime. Do not point this version at a remote database until the adapter, configuration, and deployment access controls have been implemented and tested. The local database directory is configured with `DB_DIR`; it is unrelated to a future provider connection string.

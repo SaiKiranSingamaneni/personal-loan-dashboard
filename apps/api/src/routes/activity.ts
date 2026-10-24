@@ -59,12 +59,19 @@ function loanDashboard(repositories: RepositorySet, loanId: string) {
     emiOverride: loan.emiOverride == null ? null : asPaise(loan.emiOverride),
     preEmiInterestOnly: loan.preEmiInterestOnly,
     disbursements,
-    components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
-      ...item,
-      group: item.group === "AGREEMENT" ? "AGREEMENT" as const : "OUTSIDE_AGREEMENT" as const,
-      kind: item.kind === "CASH_PAYMENT" ? "IN_HAND_CASH" : item.kind === "OTHER_ADDITIONAL" || item.kind === "OTHER_AGREEMENT" ? "OTHER" : item.kind,
-      amount: asPaise(item.amount),
-    })),
+    components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({ ...item, amount: asPaise(item.amount) })),
+    propertyDetails: (() => {
+      const item = repositories.children.propertyDetails.getByLoan(loanId);
+      return item === undefined ? undefined : {
+        superBuiltUpSft: item.superBuiltUpSft,
+        ratePerSft: asPaise(item.ratePerSft),
+        parkingSlots: item.parkingSlots,
+        parkingCharges: item.parkingCharges == null ? null : asPaise(item.parkingCharges),
+        notedGrandTotal: item.notedGrandTotal == null ? null : asPaise(item.notedGrandTotal),
+        notedTotalBeforeCash: item.notedTotalBeforeCash == null ? null : asPaise(item.notedTotalBeforeCash),
+        notedFinalCost: item.notedFinalCost == null ? null : asPaise(item.notedFinalCost),
+      };
+    })(),
     entries,
     asOf: today,
   });

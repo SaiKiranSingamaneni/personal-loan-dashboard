@@ -72,7 +72,7 @@ describe("activity engine", () => {
 
   it("summarizes outlay, funding, repayments, interest, and warnings", () => {
     const summary = summarizeActivityDashboard({
-      sanctionedAmount: asPaise(9_000_000),
+      sanctionedAmount: asPaise(3_000_000),
       emiStartDate: asIsoDate("2026-01-05"),
       annualRatePercent: 12,
       tenureMonths: 12,
@@ -81,9 +81,10 @@ describe("activity engine", () => {
       asOf: asIsoDate("2026-03-01"),
       disbursements: [{ date: asIsoDate("2026-01-01"), amount: asPaise(2_500_000) }],
       components: [
-        { id: "base", name: "Base price", group: "AGREEMENT", amount: asPaise(3_000_000) },
-        { id: "interiors", name: "Interiors", group: "OUTSIDE_AGREEMENT", amount: asPaise(500_000) },
+        { id: "base", name: "Base price", group: "AGREEMENT", kind: "BASE_PRICE", amount: asPaise(3_000_000) },
+        { id: "interiors", name: "Interiors", group: "ADDITIONAL", kind: "OTHER_ADDITIONAL", amount: asPaise(500_000) },
       ],
+      propertyDetails: { superBuiltUpSft: 1, ratePerSft: asPaise(3_000_000), parkingSlots: 0 },
       entries: [
         {
           id: "bank", loanId: "loan-1", type: "SELF_CONTRIBUTION", date: asIsoDate("2026-01-02"),
@@ -102,15 +103,17 @@ describe("activity engine", () => {
       ],
     });
     expect(summary).toMatchObject({
-      sanctioned: 9_000_000,
+      sanctioned: 3_000_000,
       disbursed: 2_500_000,
-      undisbursed: 6_500_000,
+      undisbursed: 500_000,
       principalRepaid: 80_000,
       outstandingPrincipal: 2_420_000,
       interestPaid: 20_000,
       agreementValue: 3_000_000,
       extraCosts: 500_000,
       totalOutlay: 3_500_000,
+      paidSoFar: 3_100_000,
+      remainingToPay: 400_000,
       nextEmi: { date: "2026-03-05", amount: expect.any(Number) },
       fundingSplit: { loanDisbursed: 2_500_000, selfBank: 500_000, cash: 100_000, remainingToPay: 400_000 },
       warnings: [],

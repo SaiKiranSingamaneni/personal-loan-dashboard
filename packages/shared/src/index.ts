@@ -4,6 +4,7 @@ export * from "./amortization.js";
 export * from "./payments.js";
 export * from "./paymentBreakdown.js";
 export * from "./activityEngine.js";
+export * from "./propertyCostEngine.js";
 export * from "./prepayments.js";
 export * from "./rateChanges.js";
 export * from "./disbursements.js";

@@ -6,6 +6,7 @@ import {
   type PaymentBreakdownInput,
 } from "./paymentBreakdown.js";
 import { asPaise, type Paise } from "./money.js";
+import { derivePropertyCost, type PropertyCostComponent, type PropertyCostDetails, type PropertyCostSummary } from "./propertyCostEngine.js";
 
 export type ActivityType =
   | "SELF_CONTRIBUTION"
@@ -167,7 +168,8 @@ export function reconcileAutoEmis(input: AutoEmiInput): ActivityRecord[] {
 
 export interface PropertyCostRecord {
   id: string;
-  group: "AGREEMENT" | "OUTSIDE_AGREEMENT";
+  group: "AGREEMENT" | "ADDITIONAL" | "CASH";
+  kind: PropertyCostComponent["kind"];
   name: string;
   amount: Paise;
 }
@@ -183,6 +185,7 @@ export interface DashboardSummaryInput {
   preEmiInterestOnly?: boolean;
   disbursements: readonly { date: IsoDate; amount: Paise }[];
   components: readonly PropertyCostRecord[];
+  propertyDetails?: PropertyCostDetails;
   entries: readonly ActivityRecord[];
   asOf: IsoDate;
 }
@@ -205,6 +208,9 @@ export interface DashboardSummary {
     remainingToPay: Paise;
   };
   warnings: string[];
+  propertyCost: PropertyCostSummary;
+  paidSoFar: Paise;
+  remainingToPay: Paise;
 }
 
 /** Derive all plain-language dashboard amounts from persisted domain records. */
@@ -223,19 +229,20 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
   const interestPaid = paidInstallments.reduce(
     (sum, item) => sum + (item.interestPart ?? 0), 0,
   );
-  const agreementValue = input.components
-    .filter((item) => item.group === "AGREEMENT")
-    .reduce((sum, item) => sum + item.amount, 0);
-  const extraCosts = input.components
-    .filter((item) => item.group === "OUTSIDE_AGREEMENT")
-    .reduce((sum, item) => sum + item.amount, 0);
+  const propertyCost = derivePropertyCost({
+    components: input.components,
+    details: input.propertyDetails ?? { superBuiltUpSft: 0, ratePerSft: asPaise(0), parkingSlots: 0 },
+    sanctionedLoan: input.sanctionedAmount,
+  });
+  const agreementValue = propertyCost.grandTotal;
+  const extraCosts = propertyCost.additionalCharges;
   const selfBank = asOfEntries
     .filter((item) => item.type === "SELF_CONTRIBUTION" && item.source === "BANK")
     .reduce((sum, item) => sum + (item.amount ?? 0), 0);
   const cash = asOfEntries
     .filter((item) => item.type === "SELF_CONTRIBUTION" && item.source === "CASH")
     .reduce((sum, item) => sum + (item.amount ?? 0), 0);
-  const totalOutlay = agreementValue + extraCosts;
+  const totalOutlay = propertyCost.finalCost;
   let nextDueDate = input.emiStartDate;
   let dueCount = 0;
   while (compareIsoDates(nextDueDate, input.asOf) <= 0) {
@@ -258,6 +265,7 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
     entries: active,
   }, nextDueDate, active);
   const warnings: string[] = [];
+  warnings.push(...propertyCost.checks.filter((item) => !item.ok).map((item) => `${item.label}: difference ${item.difference} paise.`));
   if (disbursed > input.sanctionedAmount) warnings.push("Loan disbursed exceeds the sanctioned amount.");
   if (disbursed + selfBank + cash > totalOutlay) warnings.push("Loan disbursed and contributions exceed total property cost.");
   for (const component of input.components) {
@@ -277,7 +285,7 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
     outstandingPrincipal: asPaise(Math.max(0, disbursed - principalRepaid)),
     interestPaid: asPaise(interestPaid),
     nextEmi: nextSplit == null ? null : { date: nextDueDate, amount: nextSplit.amount },
-    totalOutlay: asPaise(totalOutlay),
+    totalOutlay,
     agreementValue: asPaise(agreementValue),
     extraCosts: asPaise(extraCosts),
     fundingSplit: {
@@ -287,5 +295,12 @@ export function summarizeActivityDashboard(input: DashboardSummaryInput): Dashbo
       remainingToPay: asPaise(Math.max(0, totalOutlay - disbursed - selfBank - cash)),
     },
     warnings,
+    propertyCost,
+    paidSoFar: asPaise(disbursed + asOfEntries
+      .filter((entry) => entry.type === "SELF_CONTRIBUTION")
+      .reduce((sum, item) => sum + (item.amount ?? 0), 0)),
+    remainingToPay: asPaise(propertyCost.finalCost - disbursed - asOfEntries
+      .filter((entry) => entry.type === "SELF_CONTRIBUTION")
+      .reduce((sum, item) => sum + (item.amount ?? 0), 0)),
   };
 }

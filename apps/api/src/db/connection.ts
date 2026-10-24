@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { ensureDatabaseDirectories, resolveDatabasePaths } from "./paths.js";
 import { prepareSnapshotFile, tableCounts, verifySnapshot } from "./snapshotVerification.js";
+import { checkDatabaseIntegrity } from "./health.js";
 
 const migrationsDirectory = fileURLToPath(new URL("./migrations/", import.meta.url));
 
@@ -79,6 +80,7 @@ export function assertDiskSpace(databasePath: string, operation: string): number
 export interface SqliteConnection {
   client: Database.Database;
   databasePath: string;
+  startupFailures: string[];
   close(): void;
 }
 
@@ -90,6 +92,14 @@ export async function openSqliteDatabase(
     : resolve(databasePath ?? resolveDatabasePaths().databasePath);
   if (databasePath === undefined) ensureDatabaseDirectories(resolveDatabasePaths());
   const isFirstDatabaseFile = resolvedPath !== ":memory:" && !existsSync(resolvedPath);
+  if (!isFirstDatabaseFile && resolvedPath !== ":memory:") {
+    const inspection = new Database(resolvedPath, { readonly: true, fileMustExist: true });
+    const failures = checkDatabaseIntegrity(inspection);
+    if (failures.length > 0) {
+      return { client: inspection, databasePath: resolvedPath, startupFailures: failures, close: () => inspection.close() };
+    }
+    inspection.close();
+  }
   const client = new Database(resolvedPath);
   try {
     client.pragma("foreign_keys = ON");
@@ -105,5 +115,5 @@ export async function openSqliteDatabase(
     client.close();
     throw error;
   }
-  return { client, databasePath: resolvedPath, close: () => client.close() };
+  return { client, databasePath: resolvedPath, startupFailures: [], close: () => client.close() };
 }

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync, truncateSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
@@ -72,5 +72,22 @@ describe("SQLite persistence", () => {
 
     expect(restored?.name).toBe("Persistent home loan");
     expect(restored?.sanctionedAmount).toBe(5_000_000);
+  });
+
+  it("detects a truncated database before migrations and keeps it read-only", async () => {
+    directory = mkdtempSync(join(tmpdir(), "loan-dashboard-corrupt-preflight-"));
+    const databasePath = join(directory, "loans.db");
+    connection = await openSqliteDatabase(databasePath);
+    connection.client.prepare(`INSERT INTO loans (
+      id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
+      rate_type, tenure_months, start_date, emi_due_day
+    ) VALUES ('loan', 'Loan', 'Bank', 'home', 100000, 8, 'fixed', 12, '2026-01-01', 5)`).run();
+    connection.close();
+    connection = undefined;
+    truncateSync(databasePath, Math.floor(statSync(databasePath).size / 2));
+
+    connection = await openSqliteDatabase(databasePath);
+    expect(connection.startupFailures.length).toBeGreaterThan(0);
+    expect(() => connection!.client.pragma("quick_check")).toThrow(/malformed|corrupt/i);
   });
 });

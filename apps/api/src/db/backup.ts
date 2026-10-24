@@ -25,6 +25,12 @@ export class BackupService {
   }
 
   async create(now = new Date()): Promise<string> {
+    const integrity = this.database.pragma("integrity_check") as { integrity_check: string }[];
+    if (integrity.length !== 1 || integrity[0]?.integrity_check !== "ok") {
+      throw new Error(`Source database failed integrity_check: ${JSON.stringify(integrity)}`);
+    }
+    const foreignKeys = this.database.pragma("foreign_key_check") as Record<string, unknown>[];
+    if (foreignKeys.length > 0) throw new Error(`Source database failed foreign_key_check: ${JSON.stringify(foreignKeys)}`);
     mkdirSync(this.backupDirectory, { recursive: true });
     assertDiskSpace(this.databasePath, "database backup");
     const year = now.getUTCFullYear().toString().padStart(4, "0");

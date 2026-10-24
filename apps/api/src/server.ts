@@ -5,11 +5,13 @@ import { BackupService } from "./db/backup.js";
 import { fileURLToPath } from "node:url";
 import { reconcileAllLoanAutoEmis } from "./services/autoEmis.js";
 import { acquireDatabaseLock, resolveDatabasePaths } from "./db/paths.js";
+import { inspectDatabaseHealth, type DatabaseHealthState } from "./db/health.js";
 
 export interface ApiRuntime {
   app: ReturnType<typeof createApp>;
   connection: Awaited<ReturnType<typeof openSqliteDatabase>>;
   backups: BackupService;
+  health: DatabaseHealthState;
   close(): void;
 }
 
@@ -23,13 +25,22 @@ export async function initializeApi(
     : undefined);
   const backups = new BackupService(connection.client, connection.databasePath, resolvedBackupDirectory);
   try {
-    await backups.createStartup();
+    const health = inspectDatabaseHealth(connection.client, connection.databasePath, backups.backupDirectory);
+    if (connection.startupFailures.length > 0) {
+      health.dbOk = false;
+      health.failures = [...connection.startupFailures];
+    }
+    if (health.dbOk) {
+      await backups.createStartup();
+      Object.assign(health, inspectDatabaseHealth(connection.client, connection.databasePath, backups.backupDirectory));
+    }
     const repositories = createSqliteRepositories(connection.client);
-    reconcileAllLoanAutoEmis(repositories);
+    if (health.dbOk) reconcileAllLoanAutoEmis(repositories);
     return {
-      app: createApp(repositories, backups, connection.client),
+      app: createApp(repositories, backups, connection.client, health),
       connection,
       backups,
+      health,
       close: () => connection.close(),
     };
   } catch (error) {
@@ -51,11 +62,17 @@ export async function startServer(): Promise<void> {
     });
   }, 24 * 60 * 60 * 1000);
   const dailyAutoEmi = setInterval(() => {
+    if (!runtime.health.dbOk) return;
     try {
       reconcileAllLoanAutoEmis(createSqliteRepositories(runtime.connection.client));
     } catch (error) {
       process.stderr.write(`Daily auto-EMI reconciliation failed: ${String(error)}\n`);
     }
+  }, 24 * 60 * 60 * 1000);
+  const dailyIntegrityCheck = setInterval(() => {
+    const current = inspectDatabaseHealth(runtime.connection.client, runtime.connection.databasePath, runtime.backups.backupDirectory);
+    Object.assign(runtime.health, current);
+    if (!runtime.health.dbOk) process.stderr.write(`Database entered read-only degraded mode: ${runtime.health.failures.join("; ")}\n`);
   }, 24 * 60 * 60 * 1000);
   const server = runtime.app.listen(port, "127.0.0.1", () => {
     process.stdout.write(`API listening on http://127.0.0.1:${port}\n`);
@@ -63,6 +80,7 @@ export async function startServer(): Promise<void> {
   const close = (): void => {
     clearInterval(dailyBackup);
     clearInterval(dailyAutoEmi);
+    clearInterval(dailyIntegrityCheck);
     server.close(() => {
       void (async () => {
         try {

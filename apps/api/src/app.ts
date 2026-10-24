@@ -11,11 +11,13 @@ import { createActivityRouter } from "./routes/activity.js";
 import { databasePathWarnings } from "./db/paths.js";
 import { join } from "node:path";
 import { resolveDatabasePaths } from "./db/paths.js";
+import type { DatabaseHealthState } from "./db/health.js";
 
 export function createApp(
   repositories?: RepositorySet,
   backupService?: BackupService,
   database?: Database.Database,
+  health?: DatabaseHealthState,
 ): Express {
   const app = express();
   app.disable("x-powered-by");
@@ -28,6 +30,24 @@ export function createApp(
     app.get("/api/system/config", (_request, response) => {
       const dbPath = database.name;
       response.json({ dbPath, warnings: databasePathWarnings(dbPath) });
+    });
+    if (health !== undefined) {
+      app.get("/api/system/health", (_request, response) => response.json(health));
+    }
+  }
+  if (health !== undefined) {
+    app.use("/api", (request, response, next) => {
+      if (health.dbOk || request.path === "/system/health" || request.path === "/system/config") {
+        next();
+        return;
+      }
+      response.status(503).json({
+        error: {
+          code: "DB_DEGRADED",
+          message: "The database failed an integrity check. The application is read-only until it is restored.",
+          failures: health.failures,
+        },
+      });
     });
   }
   app.use("/api/simulate", createSimulationRouter());

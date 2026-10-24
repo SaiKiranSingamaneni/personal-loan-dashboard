@@ -14,6 +14,7 @@ import {
   notes,
   payments,
   propertyCostComponents,
+  propertyDetails,
   rateChanges,
   schema,
 } from "./schema.js";
@@ -80,6 +81,10 @@ export interface LoanChildrenRepository {
     upsertMany(values: (typeof propertyCostComponents.$inferInsert)[]): void;
     deleteByLoan(loanId: string): void;
     deleteById(id: string): void;
+  };
+  propertyDetails: {
+    getByLoan(loanId: string): (typeof propertyDetails.$inferSelect) | undefined;
+    upsert(value: typeof propertyDetails.$inferInsert): void;
   };
 }
 
@@ -239,6 +244,26 @@ export function createSqliteRepositories(client: Database.Database): RepositoryS
           db.delete(propertyCostComponents)
             .where(eq(propertyCostComponents.id, id))
             .run();
+        },
+      },
+      propertyDetails: {
+        getByLoan: (loanId) => db.select().from(propertyDetails).where(eq(propertyDetails.loanId, loanId)).get(),
+        upsert: (value) => {
+          db.insert(propertyDetails).values(value).onConflictDoUpdate({
+            target: propertyDetails.loanId,
+            set: {
+              unitLabel: value.unitLabel,
+              superBuiltUpSft: value.superBuiltUpSft,
+              carpetSft: value.carpetSft,
+              ratePerSft: value.ratePerSft,
+              parkingSlots: value.parkingSlots,
+              parkingCharges: value.parkingCharges,
+              notedGrandTotal: value.notedGrandTotal,
+              notedTotalBeforeCash: value.notedTotalBeforeCash,
+              notedFinalCost: value.notedFinalCost,
+              updatedAt: value.updatedAt,
+            },
+          }).run();
         },
       },
     },

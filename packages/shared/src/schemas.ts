@@ -175,16 +175,28 @@ export const activityEntryCreateSchema = z.discriminatedUnion("type", [
 export const propertyCostComponentSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(120),
-  group: z.enum(["AGREEMENT", "OUTSIDE_AGREEMENT"]),
+  group: z.enum(["AGREEMENT", "ADDITIONAL", "CASH", "OUTSIDE_AGREEMENT"]),
   kind: z.string().trim().min(1).max(80),
   amount: z.number().int().nonnegative().safe(),
   note: z.string().trim().max(1000).nullable().optional(),
 }).strict();
 
 export const propertyCostComponentsSchema = z.array(propertyCostComponentSchema).max(200);
+export const propertyDetailsSchema = z.object({
+  unitLabel: z.string().trim().max(120).nullable().optional(),
+  superBuiltUpSft: z.number().nonnegative().finite().default(0),
+  carpetSft: z.number().nonnegative().finite().nullable().optional(),
+  ratePerSft: z.number().int().nonnegative().safe().default(0),
+  parkingSlots: z.number().int().nonnegative().safe().default(0),
+  parkingCharges: z.number().int().nonnegative().safe().nullable().optional(),
+  notedGrandTotal: z.number().int().nonnegative().safe().nullable().optional(),
+  notedTotalBeforeCash: z.number().int().nonnegative().safe().nullable().optional(),
+  notedFinalCost: z.number().int().nonnegative().safe().nullable().optional(),
+}).strict();
 export const propertyUpdateSchema = z.object({
   components: propertyCostComponentsSchema,
   invoiceGrandTotal: z.number().int().nonnegative().safe().nullable().optional(),
+  details: propertyDetailsSchema.optional(),
 }).strict().superRefine((value, context) => {
   const ids = value.components.flatMap((component) => component.id === undefined ? [] : [component.id]);
   if (new Set(ids).size !== ids.length) {
@@ -267,4 +279,5 @@ export type LoanEditInput = z.infer<typeof loanEditSchema>;
 export type SimulationScenarioInput = z.infer<typeof simulationScenarioSchema>;
 export type ActivityEntryCreateInput = z.infer<typeof activityEntryCreateSchema>;
 export type PropertyCostComponentInput = z.infer<typeof propertyCostComponentSchema>;
+export type PropertyDetailsInput = z.infer<typeof propertyDetailsSchema>;
 export type ActivityQueryInput = z.infer<typeof activityQuerySchema>;

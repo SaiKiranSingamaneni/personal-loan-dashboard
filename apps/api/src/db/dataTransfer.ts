@@ -10,6 +10,7 @@ import {
   notes,
   payments,
   propertyCostComponents,
+  propertyDetails,
   rateChanges,
   schema,
 } from "./schema.js";
@@ -34,6 +35,9 @@ function validateRelations(data: ExportData): void {
       throw new Error(`Entry ${item.id} refers to a loan that is not in the import.`);
     }
   }
+  for (const item of data.propertyDetails) {
+    if (!loanIds.has(item.loanId)) throw new Error(`Property details refer to a loan that is not in the import.`);
+  }
   const componentIds = new Set(data.propertyCostComponents.map((item) => item.id));
   for (const item of data.activityEntries) {
     if (item.componentId !== null && !componentIds.has(item.componentId)) {
@@ -55,6 +59,7 @@ export function exportAllData(database: Database.Database): ExportData {
     exportedAt: new Date().toISOString(),
     loans: db.select().from(loans).all(),
     propertyCostComponents: db.select().from(propertyCostComponents).all(),
+    propertyDetails: db.select().from(propertyDetails).all(),
     activityEntries: db.select().from(activityEntries).all(),
     disbursements: db.select().from(disbursements).all(),
     contributions: db.select().from(contributions).all(),
@@ -74,6 +79,7 @@ export function importAllData(
   const counts = {
     loans: data.loans.length,
     propertyCostComponents: data.propertyCostComponents.length,
+    propertyDetails: data.propertyDetails.length,
     activityEntries: data.activityEntries.length,
     disbursements: data.disbursements.length,
     contributions: data.contributions.length,
@@ -88,6 +94,7 @@ export function importAllData(
   const db = drizzle(database, { schema });
   db.transaction((tx) => {
     tx.delete(activityEntries).run();
+    tx.delete(propertyDetails).run();
     tx.delete(propertyCostComponents).run();
     tx.delete(notes).run();
     tx.delete(payments).run();
@@ -96,7 +103,13 @@ export function importAllData(
     tx.delete(disbursements).run();
     tx.delete(loans).run();
     if (data.loans.length > 0) tx.insert(loans).values(data.loans).run();
-    if (data.propertyCostComponents.length > 0) tx.insert(propertyCostComponents).values(data.propertyCostComponents).run();
+    const normalizedPropertyComponents: (typeof propertyCostComponents.$inferInsert)[] = data.propertyCostComponents.map((item) => ({
+      ...item,
+      group: item.group === "OUTSIDE_AGREEMENT" ? (item.kind === "IN_HAND_CASH" ? "CASH" : "ADDITIONAL") : item.group,
+      kind: (item.kind === "IN_HAND_CASH" ? "CASH_PAYMENT" : item.kind === "OTHER" ? (item.group === "AGREEMENT" ? "OTHER_AGREEMENT" : "OTHER_ADDITIONAL") : item.kind) as NonNullable<(typeof propertyCostComponents.$inferInsert)["kind"]>,
+    }));
+    if (normalizedPropertyComponents.length > 0) tx.insert(propertyCostComponents).values(normalizedPropertyComponents).run();
+    if (data.propertyDetails.length > 0) tx.insert(propertyDetails).values(data.propertyDetails).run();
     if (data.activityEntries.length > 0) tx.insert(activityEntries).values(data.activityEntries).run();
     if (data.disbursements.length > 0) tx.insert(disbursements).values(data.disbursements).run();
     if (data.contributions.length > 0) tx.insert(contributions).values(data.contributions).run();

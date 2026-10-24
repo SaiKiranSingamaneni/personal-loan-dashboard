@@ -14,6 +14,7 @@ import {
 import { HttpError } from "../http/errors.js";
 import { parseInput, validateBody } from "../http/validation.js";
 import type { RepositorySet } from "../db/repositories.js";
+import type { propertyCostComponents } from "../db/schema.js";
 import { reconcileLoanAutoEmis } from "../services/autoEmis.js";
 
 function param(request: Request, key: string): string {
@@ -58,7 +59,12 @@ function loanDashboard(repositories: RepositorySet, loanId: string) {
     emiOverride: loan.emiOverride == null ? null : asPaise(loan.emiOverride),
     preEmiInterestOnly: loan.preEmiInterestOnly,
     disbursements,
-    components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({ ...item, amount: asPaise(item.amount) })),
+    components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
+      ...item,
+      group: item.group === "AGREEMENT" ? "AGREEMENT" as const : "OUTSIDE_AGREEMENT" as const,
+      kind: item.kind === "CASH_PAYMENT" ? "IN_HAND_CASH" : item.kind === "OTHER_ADDITIONAL" || item.kind === "OTHER_AGREEMENT" ? "OTHER" : item.kind,
+      amount: asPaise(item.amount),
+    })),
     entries,
     asOf: today,
   });
@@ -212,7 +218,11 @@ export function createActivityRouter(repositories: RepositorySet): Router {
   router.get("/loans/:loanId/property", (request, response) => {
     const loanId = param(request, "loanId");
     const loan = requireLoan(repositories, loanId);
-    response.json({ components: repositories.children.propertyCosts.listByLoan(loanId), invoiceGrandTotal: loan.invoiceGrandTotal });
+    response.json({ components: repositories.children.propertyCosts.listByLoan(loanId).map((item) => ({
+      ...item,
+      group: item.group === "ADDITIONAL" || item.group === "CASH" ? "OUTSIDE_AGREEMENT" : item.group,
+      kind: item.kind === "OTHER_ADDITIONAL" || item.kind === "OTHER_AGREEMENT" ? "OTHER" : item.kind,
+    })), invoiceGrandTotal: loan.invoiceGrandTotal });
   });
 
   router.put("/loans/:loanId/property", validateBody(propertyUpdateSchema), (request, response) => {
@@ -226,8 +236,10 @@ export function createActivityRouter(repositories: RepositorySet): Router {
       if (item.id !== undefined && !existingIds.has(item.id)) throw new HttpError(400, "INVALID_COMPONENT", "Property cost component does not belong to this loan.");
     }
     const now = new Date().toISOString();
-    const components = inputs.map((item) => ({
-      id: item.id ?? randomUUID(), loanId, name: item.name, group: item.group, kind: item.kind,
+    const components: (typeof propertyCostComponents.$inferInsert)[] = inputs.map((item) => ({
+      id: item.id ?? randomUUID(), loanId, name: item.name,
+      group: item.group === "OUTSIDE_AGREEMENT" ? (item.kind === "IN_HAND_CASH" ? "CASH" as const : "ADDITIONAL" as const) : item.group,
+      kind: (item.kind === "IN_HAND_CASH" ? "CASH_PAYMENT" : item.kind === "OTHER" ? (item.group === "AGREEMENT" ? "OTHER_AGREEMENT" : "OTHER_ADDITIONAL") : (["BASE_PRICE", "GST", "PARKING", "CLUB_HOUSE", "OTHER_AGREEMENT", "CORPUS_FUND", "DOCUMENTATION_DEPOSIT", "OTHER_ADDITIONAL", "CASH_PAYMENT"].includes(item.kind) ? item.kind : item.group === "AGREEMENT" ? "OTHER_AGREEMENT" : "OTHER_ADDITIONAL")) as NonNullable<(typeof propertyCostComponents.$inferInsert)["kind"]>,
       amount: item.amount, note: item.note ?? null,
       createdAt: existing.find((row) => row.id === item.id)?.createdAt ?? now, updatedAt: now,
     }));

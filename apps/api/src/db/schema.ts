@@ -49,8 +49,8 @@ export const propertyCostComponents = sqliteTable(
       .notNull()
       .references(() => loans.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    group: text("cost_group", { enum: ["AGREEMENT", "OUTSIDE_AGREEMENT"] }).notNull(),
-    kind: text("kind").notNull(),
+    group: text("cost_group", { enum: ["AGREEMENT", "ADDITIONAL", "CASH"] }).notNull(),
+    kind: text("kind", { enum: ["BASE_PRICE", "GST", "PARKING", "CLUB_HOUSE", "OTHER_AGREEMENT", "CORPUS_FUND", "DOCUMENTATION_DEPOSIT", "OTHER_ADDITIONAL", "CASH_PAYMENT"] }).notNull(),
     amount: integer("amount_paise").notNull(),
     note: text("note"),
     createdAt: text("created_at").notNull(),
@@ -58,6 +58,21 @@ export const propertyCostComponents = sqliteTable(
   },
   (table) => [index("property_cost_components_loan_idx").on(table.loanId)],
 );
+
+export const propertyDetails = sqliteTable("property_details", {
+  loanId: text("loan_id").primaryKey().references(() => loans.id, { onDelete: "cascade" }),
+  unitLabel: text("unit_label"),
+  superBuiltUpSft: real("super_built_up_sft").notNull().default(0),
+  carpetSft: real("carpet_sft"),
+  ratePerSft: integer("rate_per_sft_paise").notNull().default(0),
+  parkingSlots: integer("parking_slots").notNull().default(0),
+  parkingCharges: integer("parking_charges_paise"),
+  notedGrandTotal: integer("noted_grand_total_paise"),
+  notedTotalBeforeCash: integer("noted_total_before_cash_paise"),
+  notedFinalCost: integer("noted_final_cost_paise"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
 
 export const activityEntries = sqliteTable(
   "activity_entries",
@@ -201,6 +216,7 @@ export const notes = sqliteTable(
 export const schema = {
   loans,
   propertyCostComponents,
+  propertyDetails,
   activityEntries,
   disbursements,
   contributions,

@@ -40,6 +40,7 @@ describe("initial SQLite schema and demo seed", () => {
       "notes",
       "payments",
       "property_cost_components",
+      "property_details",
       "rate_changes",
       "schema_migrations",
     ]);
@@ -111,6 +112,41 @@ describe("initial SQLite schema and demo seed", () => {
       expect(db.prepare("SELECT origin, user_edited AS userEdited FROM activity_entries WHERE id = 'legacy-payment:p2'").get())
         .toEqual({ origin: "AUTO", userEdited: 0 });
       expect(db.prepare("SELECT COUNT(*) AS count FROM payments").get()).toEqual({ count: 2 });
+    } finally {
+      rmSync(priorMigrations, { recursive: true, force: true });
+    }
+  });
+
+  it("migrates legacy property cost groups and keeps activity component links intact", () => {
+    db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    const priorMigrations = mkdtempSync(join(tmpdir(), "loan-dashboard-property-migrations-"));
+    try {
+      const source = fileURLToPath(new URL("./migrations/", import.meta.url));
+      for (const name of readdirSync(source).filter((entry) => entry < "0008_")) {
+        writeFileSync(join(priorMigrations, name), requireMigration(source, name));
+      }
+      runMigrations(db, priorMigrations);
+      db.prepare(`INSERT INTO loans (
+        id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
+        rate_type, tenure_months, start_date, emi_due_day
+      ) VALUES ('legacy-property-loan', 'Legacy property', 'Bank', 'home', 10000000, 8,
+        'fixed', 120, '2026-01-01', 5)`).run();
+      const timestamp = "2026-01-01T00:00:00.000Z";
+      db.prepare(`INSERT INTO property_cost_components
+        (id, loan_id, name, cost_group, kind, amount_paise, created_at, updated_at)
+        VALUES ('legacy-additional', 'legacy-property-loan', 'Corpus fund', 'OUTSIDE_AGREEMENT', 'CORPUS_FUND', 5000, ?, ?),
+               ('legacy-cash', 'legacy-property-loan', 'Cash', 'OUTSIDE_AGREEMENT', 'IN_HAND_CASH', 6000, ?, ?)`).run(timestamp, timestamp, timestamp, timestamp);
+      db.prepare(`INSERT INTO activity_entries
+        (id, loan_id, type, date, amount_paise, title, origin, component_id, created_at, updated_at)
+        VALUES ('legacy-linked-entry', 'legacy-property-loan', 'SELF_CONTRIBUTION', '2026-01-01', 5000, 'Paid corpus', 'USER', 'legacy-additional', ?, ?)`).run(timestamp, timestamp);
+      runMigrations(db);
+      expect(db.prepare('SELECT id, cost_group AS "group", kind FROM property_cost_components ORDER BY id').all()).toEqual([
+        { id: "legacy-additional", group: "ADDITIONAL", kind: "CORPUS_FUND" },
+        { id: "legacy-cash", group: "CASH", kind: "CASH_PAYMENT" },
+      ]);
+      expect(db.prepare("SELECT component_id AS componentId FROM activity_entries WHERE id = 'legacy-linked-entry'").get()).toEqual({ componentId: "legacy-additional" });
+      expect(db.prepare("SELECT loan_id AS loanId, noted_grand_total_paise AS notedGrandTotal FROM property_details").get()).toEqual({ loanId: "legacy-property-loan", notedGrandTotal: null });
     } finally {
       rmSync(priorMigrations, { recursive: true, force: true });
     }

@@ -113,6 +113,35 @@ Current task: complete (S-T1–S-T7) - Last updated: 2026-10-24
 ### Property cost rework gate
 - [x] `npm run verify` passes; tag `property-rework-complete` after S-T1 through S-T7 are committed.
 
+## Database hardening tasks
+- [ ] H-T0 Audit current database paths, durability, backups, migrations, browser storage, IDs and cloud-sync location; document in `docs/DB_AUDIT.md` before code changes.
+- [ ] H-T1 Resolve one fixed-root database location from `DB_DIR`; add relocation command, repository-local `db/` layout and Settings path/warnings.
+- [ ] H-T2 Enforce SQLite durability pragmas, single-instance lock, graceful shutdown, immediate write transactions, disk checks and optimistic concurrency.
+- [ ] H-T3 Add startup/daily integrity checks, degraded read-only mode and health/restore workflow.
+- [ ] H-T4 Implement SQLite-API snapshots, verification, manifest, triggers, retention and protected snapshots.
+- [ ] H-T5 Add verified mirror, weekly logical exports and backup/verify/restore/relocate CLI commands.
+- [ ] H-T6 Add transactional append-only audit logging for mutable records.
+- [ ] H-T7 Define provider abstraction, SQLite provider, explicit Postgres placeholder, repository contract tests and cloud migration guide.
+- [ ] H-T8 Add safety regression tests and `docs/DB_RUNBOOK.md` recovery drill.
+- [ ] H-T9 Pass `npm run verify`; tag `db-hardening-complete`.
+
+### Database safety rule
+- Replace the former startup/daily live-file backup behavior. Never copy the live database or WAL file directly; all snapshots must use SQLite's online backup API or `VACUUM INTO`, then verify before publication.
+
+## UI revamp tasks
+- [ ] V-T1 Install shadcn/ui defaults with Tailwind CSS v4, theme tokens, lucide icons and font setup.
+- [ ] V-T2 Build shared form/table/status/dialog/empty/loading primitives, `/styleguide` and `docs/DESIGN_SYSTEM.md`.
+- [ ] V-T3 Apply the shared system to the Dashboard.
+- [ ] V-T4 Apply the shared system to Activity form and table.
+- [ ] V-T5 Refine donut/pie charts, interaction states, reduced motion and empty/loading states.
+- [ ] V-T6 Apply the shared system to Loan details, Analysis and Settings > Data.
+- [ ] V-T7 Add confirmed action feedback, retry/error banners, undo, stale-write handling and save/backup status.
+- [ ] V-T8 Apply the approved motion rules with reduced-motion support.
+- [ ] V-T9 Add primitive tests, styleguide screenshots, accessibility walkthrough/axe checks; pass `npm run verify`; tag `ui-revamp-complete`.
+
+### UI phase gate
+- [ ] Do not begin V-T1 until H-T9 and the `db-hardening-complete` tag are complete.
+
 ## Session log
 - 2026-10-24 - S-T7 - Added six cautious property glossary definitions and hover tooltips, made property reads return canonical tier groups, removed obsolete two-group/toggle styles, updated the README and tracker; `npm run verify` passes (111 tests) - all S-T1 through S-T7 are complete; tag `property-rework-complete` after commit.
 - 2026-10-24 - S-T6 - Replaced the old property cost toggle with three responsive pies, six property and loan KPIs, the three-way summary, and an empty property state; API supplies cost slices and reconciled payment percentages; `npm run verify` passes (111 tests) - S-T7 remains.

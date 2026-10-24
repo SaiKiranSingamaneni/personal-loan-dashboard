@@ -8,8 +8,8 @@ describe("loan REST endpoints", () => {
   let connection: SqliteConnection;
   let app: ReturnType<typeof createApp>;
 
-  beforeEach(() => {
-    connection = openSqliteDatabase(":memory:");
+  beforeEach(async () => {
+    connection = await openSqliteDatabase(":memory:");
     app = createApp(createSqliteRepositories(connection.client));
   });
 

@@ -10,7 +10,7 @@ describe("payment and loan entry endpoints", () => {
   let loanId: string;
 
   beforeEach(async () => {
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     app = createApp(createSqliteRepositories(connection.client));
     const response = await request(app).post("/api/loans").send({
       name: "Test loan",

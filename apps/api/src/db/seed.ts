@@ -102,8 +102,8 @@ export function seedDemoData(db: Database.Database): boolean {
   return true;
 }
 
-function runSeedScript(): void {
-  const connection = openSqliteDatabase();
+async function runSeedScript(): Promise<void> {
+  const connection = await openSqliteDatabase();
   try {
     const inserted = seedDemoData(connection.client);
     process.stdout.write(inserted ? "Seeded two demo loans.\n" : "Database already contains loans; no seed data added.\n");
@@ -113,5 +113,5 @@ function runSeedScript(): void {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  runSeedScript();
+  await runSeedScript();
 }

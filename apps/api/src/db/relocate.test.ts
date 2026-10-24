@@ -24,7 +24,7 @@ describe("database relocation", () => {
     writeFileSync(join(tempRoot, ".loan-dashboard-root"), "root\n");
     writeFileSync(join(tempRoot, "package.json"), JSON.stringify({ name: "fixture" }));
     const legacyPath = join(legacyDirectory, "loans.db");
-    const source = openSqliteDatabase(legacyPath);
+    const source = await openSqliteDatabase(legacyPath);
     source.client.prepare(`INSERT INTO loans (
       id, name, lender, loan_type, status, sanctioned_amount_paise,
       annual_rate_percent, rate_type, tenure_months, start_date, emi_due_day,

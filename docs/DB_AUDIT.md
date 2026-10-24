@@ -1,20 +1,20 @@
 # Database Audit
 
-Audit performed: 2026-10-24. This is a read-only inventory for H-T0; no application code was changed.
+Audit updated: 2026-10-24 after H-T1b.
 
 ## Database path
 
-`openSqliteDatabase()` in `apps/api/src/db/connection.ts` accepts an explicit path, otherwise uses `DATABASE_PATH`, otherwise defaults to `./data/loans.db`. It resolves non-memory paths with Node's `path.resolve()`. The relative default is therefore derived from `process.cwd()` rather than from a fixed repository root. Starting the API with different working directories can select different database files. The current workspace does not contain a `.loan-dashboard-root` marker.
+`openSqliteDatabase()` in `apps/api/src/db/connection.ts` uses an explicit path only for internal tests and tools. Normal app startup resolves the absolute path from `DB_DIR`, defaulting to `<repo>/db/data/loans.db`; repository root discovery uses `.loan-dashboard-root` and the workspace `package.json`, never `process.cwd()`. `DATABASE_PATH` is rejected with a clear error and is not used by relocation candidate detection. Production backups resolve to `<DB_DIR>/backups`, regardless of process working directory.
 
 ## SQLite connection and pragmas
 
-The API uses `better-sqlite3` through Drizzle's better-sqlite3 adapter. The runtime connection applies `foreign_keys = ON` and `journal_mode = WAL`. `synchronous` is not set explicitly, and `busy_timeout` is not configured. Migrations `0001_initial.sql` and `0008_property_three_tier_costs.sql` also request `foreign_keys = ON`.
+The API uses `better-sqlite3` through Drizzle's better-sqlite3 adapter. Every connection sets `journal_mode = WAL`, `synchronous = FULL`, `foreign_keys = ON`, and `busy_timeout = 5000`.
 
 ## Migrations and backups
 
-`openSqliteDatabase()` runs all unapplied, lexically sorted SQL migrations before returning the connection. `initializeApi()` in `apps/api/src/server.ts` then creates the startup backup. Consequently, the existing startup backup is taken after migrations, not before them.
+`openSqliteDatabase()` runs unapplied, lexically sorted SQL migrations before returning the connection. Each migration runs in an immediate transaction. Before any pending migration, the runner takes and verifies a SQLite online backup named `pre-migration-<timestamp>-<schemaVersion>.db`; failure to create or verify it aborts migration. These named pre-migration snapshots are excluded from ordinary count-based pruning. Migrations 0005 and 0008 are table-rebuild migrations; before H-T1b they did not run `foreign_key_check` after the rebuild. The runner now runs `PRAGMA foreign_key_check` inside each of those migration transactions and rolls back on violations. Startup snapshots are verified and reused for up to ten minutes only when the database and WAL have not changed since that snapshot.
 
-`BackupService` in `apps/api/src/db/backup.ts` uses `better-sqlite3`'s `database.backup(target)` API. It does not use `fs.copyFile`, `cp`, or another live database file copy, so the current backup mechanism is not a live-file-copy hazard. Backups are timestamped, and retention keeps the latest 30 by filename. The service does not verify snapshots, keep a manifest/checksum, use a mirror, or protect pre-migration snapshots. A second backup interval runs every 24 hours after startup.
+`BackupService` in `apps/api/src/db/backup.ts` uses `better-sqlite3`'s online backup API to a temporary file, verifies `integrity_check` and row counts, then renames atomically. Ordinary backups retain the latest 30; pre-migration snapshots are excluded. The service does not yet have the H-T4 manifest/checksum and tiered retention or H-T5 mirror. A second backup interval runs every 24 hours after startup.
 
 ## Browser storage
 
@@ -30,9 +30,16 @@ The resolved workspace path is `/Users/kiransingamaneni/Projects/personal-loan-d
 
 ## H-T0 findings
 
-- [ ] Database path is independent of `process.cwd()`.
+- [x] Database path is independent of `process.cwd()`.
 - [x] Current backup uses SQLite's online backup API, not a live `.db`/WAL file copy.
-- [ ] A backup is taken before startup migrations.
-- [ ] Durability pragmas include explicit `synchronous = FULL` and `busy_timeout`.
-- [ ] Root marker `.loan-dashboard-root` exists.
+- [x] A verified backup is taken before pending migrations.
+- [x] Durability pragmas include explicit `synchronous = FULL` and `busy_timeout`.
+- [x] Root marker `.loan-dashboard-root` exists.
 - [x] No application business records are stored in browser storage.
+
+## H-T1b migration and live database checks
+
+- Migrations execute in immediate transactions. Before migration, a SQLite backup API snapshot is verified by `integrity_check` and per-table row counts; failure aborts migration.
+- Migrations 0005 and 0008 now run `foreign_key_check` after their table rebuilds, before committing their transaction. Violations abort and roll back the migration.
+- Read-only live database check on 2026-10-24: `PRAGMA integrity_check` returned `ok`; `PRAGMA foreign_key_check` returned no rows.
+- `DATABASE_PATH` is no longer a selector; setting it now fails with guidance to use `DB_DIR`. Production and default backup paths derive from `DB_DIR/backups`, independent of working directory.

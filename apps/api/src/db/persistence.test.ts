@@ -16,9 +16,9 @@ describe("SQLite persistence", () => {
     if (directory) rmSync(directory, { recursive: true, force: true });
   });
 
-  it("applies the required durability pragmas on every connection", () => {
+  it("applies the required durability pragmas on every connection", async () => {
     directory = mkdtempSync(join(tmpdir(), "loan-dashboard-pragmas-"));
-    connection = openSqliteDatabase(join(directory, "loans.db"));
+    connection = await openSqliteDatabase(join(directory, "loans.db"));
     expect(connection.client.pragma("journal_mode", { simple: true })).toBe("wal");
     expect(connection.client.pragma("synchronous", { simple: true })).toBe(2);
     expect(connection.client.pragma("foreign_keys", { simple: true })).toBe(1);
@@ -36,10 +36,10 @@ describe("SQLite persistence", () => {
     releaseRecovered();
   });
 
-  it("keeps loan records after closing and reopening the database file", () => {
+  it("keeps loan records after closing and reopening the database file", async () => {
     directory = mkdtempSync(join(tmpdir(), "loan-dashboard-persistence-"));
     const databasePath = join(directory, "loans.db");
-    connection = openSqliteDatabase(databasePath);
+    connection = await openSqliteDatabase(databasePath);
     const repositories = createSqliteRepositories(connection.client);
     repositories.loans.create({
       id: "persistent-loan",
@@ -67,7 +67,7 @@ describe("SQLite persistence", () => {
     });
 
     connection.close();
-    connection = openSqliteDatabase(databasePath);
+    connection = await openSqliteDatabase(databasePath);
     const restored = createSqliteRepositories(connection.client).loans.getById("persistent-loan");
 
     expect(restored?.name).toBe("Persistent home loan");

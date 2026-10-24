@@ -16,7 +16,7 @@ describe("loan timeline endpoint", () => {
   let loanId: string;
 
   beforeEach(async () => {
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     app = createApp(createSqliteRepositories(connection.client));
     const loan = await request(app).post("/api/loans").send({
       name: "Timeline loan",

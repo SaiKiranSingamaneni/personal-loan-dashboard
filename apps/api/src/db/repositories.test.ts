@@ -6,8 +6,8 @@ describe("SQLite repositories", () => {
   let connection: SqliteConnection;
   let repositories: ReturnType<typeof createSqliteRepositories>;
 
-  beforeEach(() => {
-    connection = openSqliteDatabase(":memory:");
+  beforeEach(async () => {
+    connection = await openSqliteDatabase(":memory:");
     repositories = createSqliteRepositories(connection.client);
   });
 
@@ -33,8 +33,8 @@ describe("SQLite repositories", () => {
     });
   }
 
-  it("runs versioned migrations once and exposes typed loan records", () => {
-    runMigrations(connection.client);
+  it("runs versioned migrations once and exposes typed loan records", async () => {
+    await runMigrations(connection.client);
     expect(
       connection.client.prepare("SELECT COUNT(*) AS count FROM schema_migrations").get(),
     ).toEqual({ count: 9 });

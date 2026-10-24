@@ -20,7 +20,7 @@ describe("data safety endpoints", () => {
 
   it("exports, previews, and transactionally overwrites all loan data", async () => {
     tempDirectory = mkdtempSync(join(tmpdir(), "loan-dashboard-transfer-"));
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     const repositories = createSqliteRepositories(connection.client);
     app = createApp(repositories, undefined, connection.client);
     const loan = await request(app).post("/api/loans").send({
@@ -93,7 +93,7 @@ describe("data safety endpoints", () => {
 
   it("restores trashed entries and requires explicit confirmation to hard delete", async () => {
     tempDirectory = mkdtempSync(join(tmpdir(), "loan-dashboard-trash-"));
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     app = createApp(createSqliteRepositories(connection.client), undefined, connection.client);
     const loan = await request(app).post("/api/loans").send({
       name: "Trash loan",
@@ -147,7 +147,7 @@ describe("data safety endpoints", () => {
 
   it("runs the what-if endpoint and creates a manual backup", async () => {
     tempDirectory = mkdtempSync(join(tmpdir(), "loan-dashboard-backup-api-"));
-    connection = openSqliteDatabase(join(tempDirectory, "loans.db"));
+    connection = await openSqliteDatabase(join(tempDirectory, "loans.db"));
     const backupService = new BackupService(
       connection.client,
       connection.databasePath,

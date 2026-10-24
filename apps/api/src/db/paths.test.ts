@@ -33,13 +33,23 @@ describe("database path configuration", () => {
     try {
       const expected = join(root, "db", "data", "loans.db");
       expect(resolveDatabasePaths(sourceDirectory, {}).databasePath).toBe(expected);
+      expect(resolveDatabasePaths(sourceDirectory, {}).backupsDirectory).toBe(join(root, "db", "backups"));
       process.chdir(otherCwd);
       expect(findRepositoryRoot(sourceDirectory)).toBe(root);
       expect(resolveDatabasePaths(sourceDirectory, {}).databasePath).toBe(expected);
+      expect(resolveDatabasePaths(sourceDirectory, {}).backupsDirectory).toBe(join(root, "db", "backups"));
     } finally {
       process.chdir(originalCwd);
       rmSync(otherCwd, { recursive: true, force: true });
     }
+  });
+
+  it("rejects the retired DATABASE_PATH selector and accepts DB_DIR alone", () => {
+    const root = makeWorkspace();
+    expect(() => resolveDatabasePaths(join(root, "apps", "api"), { DATABASE_PATH: "/tmp/other.db" } as NodeJS.ProcessEnv))
+      .toThrow(/DATABASE_PATH is no longer supported/);
+    expect(resolveDatabasePaths(join(root, "apps", "api"), { DB_DIR: "private" } as NodeJS.ProcessEnv).dbDirectory)
+      .toBe(join(root, "private"));
   });
 
   it("resolves a relative DB_DIR from the repository root and creates the first tree", () => {

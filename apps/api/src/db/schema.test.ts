@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,10 +15,10 @@ describe("initial SQLite schema and demo seed", () => {
     db = undefined;
   });
 
-  it("creates all loan entities and seeds two related demo loans idempotently", () => {
+  it("creates all loan entities and seeds two related demo loans idempotently", async () => {
     db = new Database(":memory:");
     db.pragma("foreign_keys = ON");
-    runMigrations(db);
+    await runMigrations(db);
     expect(seedDemoData(db)).toBe(true);
     expect(seedDemoData(db)).toBe(false);
     expect(db.prepare("SELECT COUNT(*) AS count FROM loans").get()).toEqual({ count: 2 });
@@ -46,7 +46,7 @@ describe("initial SQLite schema and demo seed", () => {
     ]);
   });
 
-  it("migrates existing financial records into activity without changing their values", () => {
+  it("migrates existing financial records into activity without changing their values", async () => {
     db = new Database(":memory:");
     db.pragma("foreign_keys = ON");
     const priorMigrations = mkdtempSync(join(tmpdir(), "loan-dashboard-migrations-"));
@@ -55,7 +55,7 @@ describe("initial SQLite schema and demo seed", () => {
       for (const name of readdirSync(source).filter((entry) => entry < "0005_")) {
         writeFileSync(join(priorMigrations, name), requireMigration(source, name));
       }
-      runMigrations(db, priorMigrations);
+      await runMigrations(db, priorMigrations);
       db.prepare(`INSERT INTO loans (
         id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
         rate_type, tenure_months, start_date, emi_due_day
@@ -79,7 +79,7 @@ describe("initial SQLite schema and demo seed", () => {
         id, loan_id, effective_date, annual_rate_percent, mode
       ) VALUES ('r1', 'legacy-loan', '2026-03-01', 8.5, 'keep-emi')`).run();
 
-      runMigrations(db);
+      await runMigrations(db);
 
       const entries = db.prepare(`SELECT id, type, date, amount_paise AS amount, title,
         notes, status, interest_part_paise AS interestPart,
@@ -117,7 +117,7 @@ describe("initial SQLite schema and demo seed", () => {
     }
   });
 
-  it("migrates legacy property cost groups and keeps activity component links intact", () => {
+  it("migrates legacy property cost groups and keeps activity component links intact", async () => {
     db = new Database(":memory:");
     db.pragma("foreign_keys = ON");
     const priorMigrations = mkdtempSync(join(tmpdir(), "loan-dashboard-property-migrations-"));
@@ -126,7 +126,7 @@ describe("initial SQLite schema and demo seed", () => {
       for (const name of readdirSync(source).filter((entry) => entry < "0008_")) {
         writeFileSync(join(priorMigrations, name), requireMigration(source, name));
       }
-      runMigrations(db, priorMigrations);
+      await runMigrations(db, priorMigrations);
       db.prepare(`INSERT INTO loans (
         id, name, lender, loan_type, sanctioned_amount_paise, annual_rate_percent,
         rate_type, tenure_months, start_date, emi_due_day
@@ -140,7 +140,7 @@ describe("initial SQLite schema and demo seed", () => {
       db.prepare(`INSERT INTO activity_entries
         (id, loan_id, type, date, amount_paise, title, origin, component_id, created_at, updated_at)
         VALUES ('legacy-linked-entry', 'legacy-property-loan', 'SELF_CONTRIBUTION', '2026-01-01', 5000, 'Paid corpus', 'USER', 'legacy-additional', ?, ?)`).run(timestamp, timestamp);
-      runMigrations(db);
+      await runMigrations(db);
       expect(db.prepare('SELECT id, cost_group AS "group", kind FROM property_cost_components ORDER BY id').all()).toEqual([
         { id: "legacy-additional", group: "ADDITIONAL", kind: "CORPUS_FUND" },
         { id: "legacy-cash", group: "CASH", kind: "CASH_PAYMENT" },
@@ -152,10 +152,10 @@ describe("initial SQLite schema and demo seed", () => {
     }
   });
 
-  it("enforces loan type, positive tenure, and foreign-key constraints", () => {
+  it("enforces loan type, positive tenure, and foreign-key constraints", async () => {
     db = new Database(":memory:");
     db.pragma("foreign_keys = ON");
-    runMigrations(db);
+    await runMigrations(db);
     seedDemoData(db);
     expect(() =>
       db!.prepare("UPDATE loans SET tenure_months = 0 WHERE id = ?").run("demo-home-loan"),
@@ -165,6 +165,26 @@ describe("initial SQLite schema and demo seed", () => {
         .prepare("INSERT INTO disbursements (id, loan_id, date, amount_paise) VALUES (?, ?, ?, ?)")
         .run("invalid-child", "missing-loan", "2025-01-01", 100),
     ).toThrow();
+  });
+
+  it("aborts unapplied migrations when the verified pre-migration snapshot cannot be made", async () => {
+    const root = mkdtempSync(join(tmpdir(), "loan-dashboard-migration-snapshot-fail-"));
+    const databasePath = join(root, "loans.db");
+    const migrations = join(root, "migrations");
+    const backupBlocker = join(root, "not-a-directory");
+    mkdirSync(migrations);
+    writeFileSync(backupBlocker, "block snapshots");
+    writeFileSync(join(migrations, "0001_test.sql"), "CREATE TABLE should_not_migrate (id INTEGER);");
+    db = new Database(databasePath);
+    try {
+      await expect(runMigrations(db, migrations, backupBlocker)).rejects.toThrow(/Pre-migration snapshot failed/);
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'should_not_migrate'").get()).toBeUndefined();
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'").get()).toBeUndefined();
+    } finally {
+      db.close();
+      db = undefined;
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

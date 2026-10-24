@@ -22,7 +22,7 @@ describe("Express API skeleton", () => {
 
   it("reports the absolute database location and path warnings", async () => {
     const directory = mkdtempSync(join(tmpdir(), "loan-dashboard-system-config-"));
-    const connection = openSqliteDatabase(join(directory, "loans.db"));
+    const connection = await openSqliteDatabase(join(directory, "loans.db"));
     try {
       const response = await request(createApp(undefined, undefined, connection.client)).get("/api/system/config");
       expect(response.status).toBe(200);

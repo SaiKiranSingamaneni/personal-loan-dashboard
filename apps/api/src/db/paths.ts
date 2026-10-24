@@ -34,6 +34,9 @@ export function resolveDatabasePaths(
   environment: NodeJS.ProcessEnv = process.env,
 ): DatabasePaths {
   const repositoryRoot = findRepositoryRoot(startDirectory);
+  if (environment.DATABASE_PATH?.trim()) {
+    throw new Error("DATABASE_PATH is no longer supported. Set DB_DIR to choose the database folder.");
+  }
   const configured = environment.DB_DIR?.trim();
   const dbDirectory = configured === undefined || configured === ""
     ? join(repositoryRoot, "db")
@@ -115,12 +118,6 @@ export function legacyDatabaseCandidates(paths: DatabasePaths): string[] {
     join(paths.repositoryRoot, "data", "loans.db"),
     join(paths.repositoryRoot, "apps", "api", "data", "loans.db"),
   ];
-  const configuredLegacyPath = process.env.DATABASE_PATH?.trim();
-  if (configuredLegacyPath && configuredLegacyPath !== ":memory:") {
-    candidates.push(isAbsolute(configuredLegacyPath)
-      ? resolve(configuredLegacyPath)
-      : resolve(process.cwd(), configuredLegacyPath));
-  }
   return [...new Set(candidates)];
 }
 

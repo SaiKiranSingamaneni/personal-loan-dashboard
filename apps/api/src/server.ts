@@ -8,7 +8,7 @@ import { acquireDatabaseLock, resolveDatabasePaths } from "./db/paths.js";
 
 export interface ApiRuntime {
   app: ReturnType<typeof createApp>;
-  connection: ReturnType<typeof openSqliteDatabase>;
+  connection: Awaited<ReturnType<typeof openSqliteDatabase>>;
   backups: BackupService;
   close(): void;
 }
@@ -17,13 +17,13 @@ export async function initializeApi(
   databasePath?: string,
   backupDirectory?: string,
 ): Promise<ApiRuntime> {
-  const connection = openSqliteDatabase(databasePath);
+  const connection = await openSqliteDatabase(databasePath);
   const resolvedBackupDirectory = backupDirectory ?? (databasePath === undefined
     ? resolveDatabasePaths().backupsDirectory
     : undefined);
   const backups = new BackupService(connection.client, connection.databasePath, resolvedBackupDirectory);
   try {
-    await backups.create();
+    await backups.createStartup();
     const repositories = createSqliteRepositories(connection.client);
     reconcileAllLoanAutoEmis(repositories);
     return {

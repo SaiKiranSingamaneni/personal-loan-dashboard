@@ -13,7 +13,7 @@ describe("large dashboard dataset performance", () => {
   afterEach(() => connection?.close());
 
   it("serves dashboard bootstrap data for five loans with 600 payments each under one second", async () => {
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     const repositories = createSqliteRepositories(connection.client);
     const timestamp = new Date().toISOString();
     const firstPaymentDate = asIsoDate("1975-12-05");

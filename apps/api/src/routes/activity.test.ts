@@ -10,7 +10,7 @@ describe("Activity and property APIs", () => {
   let loanId: string;
 
   beforeEach(async () => {
-    connection = openSqliteDatabase(":memory:");
+    connection = await openSqliteDatabase(":memory:");
     app = createApp(createSqliteRepositories(connection.client), undefined, connection.client);
     const created = await request(app).post("/api/loans").send({
       name: "Home loan", lender: "Example", loanType: "home", sanctionedAmount: 9_000_000,
